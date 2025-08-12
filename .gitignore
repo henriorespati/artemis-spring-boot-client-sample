@@ -1,0 +1,9 @@
+# Ignore all files and directories in any directory named 'target'
+**/target/
+
+# Ignore files created by macOS
+.DS_Store
+
+# Ignore files created by various IDEs (e.g., VS Code, IntelliJ IDEA)
+.vscode/
+.idea/

@@ -1,0 +1,23 @@
+artemis:
+  brokerUrls:
+    - tcp://localhost:61616
+  ssl:
+    enabled: false
+    trustStorePath: classpath:ssl/truststore.jks
+    trustStorePassword: changeit
+    keyStorePath: classpath:ssl/keystore.jks
+    keyStorePassword: changeit
+  queues:
+    - name: queue.orders
+    - name: queue.payments
+  pool:
+    maxProducers: 10
+    maxConsumers: 10
+    consumerReceiveTimeoutMs: 1000
+
+server:
+  port: 8080
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
