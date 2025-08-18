@@ -1,23 +1,28 @@
-artemis:
-  brokerUrls:
-    - tcp://localhost:61616
-  ssl:
-    enabled: false
-    trustStorePath: classpath:ssl/truststore.jks
-    trustStorePassword: changeit
-    keyStorePath: classpath:ssl/keystore.jks
-    keyStorePassword: changeit
-  queues:
-    - name: queue.orders
-    - name: queue.payments
-  pool:
-    maxProducers: 10
-    maxConsumers: 10
-    consumerReceiveTimeoutMs: 1000
-
 server:
   port: 8080
 
-spring:
-  main:
-    allow-bean-definition-overriding: true
+artemis:
+  core:
+    broker-urls:
+      - ssl://127.0.0.1:61617
+      - ssl://127.0.0.1:61717
+    user: admin
+    password: password
+    trust-store-path: truststore.p12
+    trust-store-password: changeit
+    producer-pool-size: 2
+    consumer-threads-per-queue: 1
+    consumer-mode: ASYNC
+    retry-interval: 1000
+    retry-interval-multiplier: 1.5
+    max-retry-interval: 5000
+    reconnect-attempts: 5
+    confirmation-window-size: 1024
+    queues:
+      - exampleQueue1
+      - exampleQueue2
+
+logging:
+  level:
+    root: info
+    com.example.artemis: debug

@@ -7,3 +7,5 @@
 # Ignore files created by various IDEs (e.g., VS Code, IntelliJ IDEA)
 .vscode/
 .idea/
+
+truststore.*

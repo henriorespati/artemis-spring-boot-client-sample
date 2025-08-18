@@ -6,133 +6,53 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
-@ConfigurationProperties(prefix = "artemis")
+@ConfigurationProperties(prefix = "artemis.core")
 public class ArtemisProperties {
-
     private List<String> brokerUrls;
-    private Ssl ssl;
-    private List<QueueConfig> queues;
-    private Pool pool;
+    private String user;
+    private String password;
 
-    public List<String> getBrokerUrls() {
-        return brokerUrls;
-    }
+    private String trustStorePath;
+    private String trustStorePassword;
 
-    public void setBrokerUrls(List<String> brokerUrls) {
-        this.brokerUrls = brokerUrls;
-    }
+    private int producerPoolSize = 5;
+    private int consumerThreadsPerQueue = 3;
+    private String consumerMode = "SYNC";
+    private int retryInterval = 2000; 
+    private double retryIntervalMultiplier = 1.5; 
+    private int maxRetryInterval = 10000; 
+    private int reconnectAttempts = 5; 
+    private int confirmationWindowSize = 1024;
 
-    public Ssl getSsl() {
-        return ssl;
-    }
+    private List<String> queues;
 
-    public void setSsl(Ssl ssl) {
-        this.ssl = ssl;
-    }
-
-    public List<QueueConfig> getQueues() {
-        return queues;
-    }
-
-    public void setQueues(List<QueueConfig> queues) {
-        this.queues = queues;
-    }
-
-    public Pool getPool() {
-        return pool;
-    }
-
-    public void setPool(Pool pool) {
-        this.pool = pool;
-    }
-
-    public static class Ssl {
-        private boolean enabled;
-        private String trustStorePath;
-        private String trustStorePassword;
-        private String keyStorePath;
-        private String keyStorePassword;
-
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-
-        public String getTrustStorePath() {
-            return trustStorePath;
-        }
-
-        public void setTrustStorePath(String trustStorePath) {
-            this.trustStorePath = trustStorePath;
-        }
-
-        public String getTrustStorePassword() {
-            return trustStorePassword;
-        }
-
-        public void setTrustStorePassword(String trustStorePassword) {
-            this.trustStorePassword = trustStorePassword;
-        }
-
-        public String getKeyStorePath() {
-            return keyStorePath;
-        }
-
-        public void setKeyStorePath(String keyStorePath) {
-            this.keyStorePath = keyStorePath;
-        }
-
-        public String getKeyStorePassword() {
-            return keyStorePassword;
-        }
-
-        public void setKeyStorePassword(String keyStorePassword) {
-            this.keyStorePassword = keyStorePassword;
-        }
-    }
-
-    public static class QueueConfig {
-        private String name;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
-
-    public static class Pool {
-        private int maxProducers;
-        private int maxConsumers;
-        private long consumerReceiveTimeoutMs;
-
-        public int getMaxProducers() {
-            return maxProducers;
-        }
-
-        public void setMaxProducers(int maxProducers) {
-            this.maxProducers = maxProducers;
-        }
-
-        public int getMaxConsumers() {
-            return maxConsumers;
-        }
-
-        public void setMaxConsumers(int maxConsumers) {
-            this.maxConsumers = maxConsumers;
-        }
-
-        public long getConsumerReceiveTimeoutMs() {
-            return consumerReceiveTimeoutMs;
-        }
-
-        public void setConsumerReceiveTimeoutMs(long consumerReceiveTimeoutMs) {
-            this.consumerReceiveTimeoutMs = consumerReceiveTimeoutMs;
-        }
-    }
+    // Getters and setters 
+    public List<String> getBrokerUrls() { return brokerUrls; }
+    public void setBrokerUrls(List<String> brokerUrls) { this.brokerUrls = brokerUrls; }
+    public String getUser() { return user; }
+    public void setUser(String user) { this.user = user; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    public String getTrustStorePath() { return trustStorePath; }
+    public void setTrustStorePath(String trustStorePath) { this.trustStorePath = trustStorePath; }
+    public String getTrustStorePassword() { return trustStorePassword; }
+    public void setTrustStorePassword(String trustStorePassword) { this.trustStorePassword = trustStorePassword; }
+    public int getProducerPoolSize() { return producerPoolSize; }
+    public void setProducerPoolSize(int producerPoolSize) { this.producerPoolSize = producerPoolSize; }
+    public int getConsumerThreadsPerQueue() { return consumerThreadsPerQueue; }
+    public void setConsumerThreadsPerQueue(int consumerThreadsPerQueue) { this.consumerThreadsPerQueue = consumerThreadsPerQueue; }
+    public String getConsumerMode() { return consumerMode; }
+    public void setConsumerMode(String consumerMode) { this.consumerMode = consumerMode; }
+    public int getRetryInterval() { return retryInterval; } 
+    public void setRetryInterval(int retryInterval) { this.retryInterval = retryInterval; }
+    public double getRetryIntervalMultiplier() { return retryIntervalMultiplier; } 
+    public void setRetryIntervalMultiplier(double retryIntervalMultiplier) { this.retryIntervalMultiplier = retryIntervalMultiplier; }
+    public int getMaxRetryInterval() { return maxRetryInterval; } 
+    public void setMaxRetryInterval(int maxRetryInterval) { this.maxRetryInterval = maxRetryInterval; }
+    public int getReconnectAttempts() { return reconnectAttempts; } 
+    public void setReconnectAttempts(int reconnectAttempts) { this.reconnectAttempts = reconnectAttempts; }
+    public int getConfirmationWindowSize() { return confirmationWindowSize; } 
+    public void setConfirmationWindowSize(int confirmationWindowSize) { this.confirmationWindowSize = confirmationWindowSize; }
+    public List<String> getQueues() { return queues; }
+    public void setQueues(List<String> queues) { this.queues = queues; }
 }
