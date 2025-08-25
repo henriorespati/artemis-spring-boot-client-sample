@@ -106,16 +106,16 @@ public class ArtemisCoreConfig {
     }
 
     @Bean
-public ConsumerPool consumerPool(
-        @Qualifier("syncSessionFactory") ClientSessionFactory syncSessionFactory,
-        @Qualifier("asyncSessionFactory") ClientSessionFactory asyncSessionFactory,
-        ArtemisProperties props) {
+    public ConsumerPool consumerPool(
+            @Qualifier("syncSessionFactory") ClientSessionFactory syncSessionFactory,
+            @Qualifier("asyncSessionFactory") ClientSessionFactory asyncSessionFactory,
+            ArtemisProperties props) {
 
-    if ("SYNC".equalsIgnoreCase(props.getConsumerMode())) {
-        return new ConsumerPool(syncSessionFactory, props);
-    } else {
-        return new ConsumerPool(asyncSessionFactory, props);
+        if ("SYNC".equalsIgnoreCase(props.getConsumerMode())) {
+            return new ConsumerPool(syncSessionFactory, props);
+        } else {
+            return new ConsumerPool(asyncSessionFactory, props);
+        }
     }
-}
 
 }
