@@ -4,8 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ArtemisCoreApp {
+public class ArtemisJMSApp {
     public static void main(String[] args) {
-        SpringApplication.run(ArtemisCoreApp.class, args);
+        SpringApplication.run(ArtemisJMSApp.class, args);
     }
 }

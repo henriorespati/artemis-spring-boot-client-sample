@@ -3,15 +3,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.example</groupId>
-  <artifactId>artemis-core-client</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <artifactId>artemis-jakarta-client</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
     <java.version>17</java.version>
-    <spring.boot.version>3.2.5</spring.boot.version>
+    <spring.boot.version>3.0.13</spring.boot.version>
     <artemis.version>2.33.0</artemis.version>
     <commons.pool2.version>2.12.0</commons.pool2.version>
+    <jakarta.jms.version>3.1.0</jakarta.jms.version>
+    <jboss.logging.version>3.5.0.Final</jboss.logging.version>
   </properties>
 
   <dependencyManagement>
@@ -38,17 +40,32 @@
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
 
-    <!-- Artemis Core Client -->
+    <!-- Artemis JMS Client (needed for ActiveMQConnectionFactory with Jakarta JMS) -->
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>artemis-jakarta-client</artifactId>
+      <version>${artemis.version}</version>
+    </dependency>
+
+    <!-- Artemis Core (transport layer, used internally by JMS client) -->
     <dependency>
       <groupId>org.apache.activemq</groupId>
       <artifactId>artemis-core-client</artifactId>
       <version>${artemis.version}</version>
     </dependency>
 
+    <!-- Commons (required by Artemis) -->
     <dependency>
       <groupId>org.apache.activemq</groupId>
       <artifactId>artemis-commons</artifactId>
-      <version>2.33.0</version>
+      <version>${artemis.version}</version>
+    </dependency>
+
+    <!-- Jakarta JMS API -->
+    <dependency>
+      <groupId>jakarta.jms</groupId>
+      <artifactId>jakarta.jms-api</artifactId>
+      <version>${jakarta.jms.version}</version>
     </dependency>
 
     <!-- Commons Pool2 -->
@@ -63,6 +80,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-logging</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+      <version>${jboss.logging.version}</version>
+    </dependency>
+
 
     <!-- (Optional) Testing -->
     <dependency>

@@ -1,11 +1,11 @@
-# Artemis Core API Spring Boot Client with Pooled Producers & Consumers
+# Java JMS API Spring Boot Client with Pooled Producers & Consumers
 
-This is a **Spring Boot** application demonstrating best practices for **Apache ActiveMQ Artemis Core API** client usage:
+This is a **Spring Boot** application demonstrating best practices for **Apache ActiveMQ Java JMS API** client usage:
 - **Connection pooling** for producers and consumers
 - **Configurable multiple queues** via `application.yml`
 - **Sync & async send** with Core API async acknowledgements
 - **Clustered broker** connection support
-- **Event-driven consumer listeners** using Artemis Core API
+- **Event-driven consumer listeners** using Java JMS API
 - **Thread-pool based scaling** for both producers and consumers
 
 ---

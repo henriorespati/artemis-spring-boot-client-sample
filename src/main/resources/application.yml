@@ -2,12 +2,13 @@ server:
   port: 8080
 
 artemis:
-  core:
+  jms:
     broker-urls:
-      - ssl://127.0.0.1:61617
-      - ssl://127.0.0.1:61717
+      - tcp://127.0.0.1:61617
+      - tcp://127.0.0.1:61717
     user: admin
     password: password
+    ssl-enabled: true
     trust-store-path: truststore.p12
     trust-store-password: changeit
     producer-pool-size: 2

@@ -1,14 +1,12 @@
 package com.example.artemis.service;
 
-import com.example.artemis.core.pool.ProducerPool;
-import org.apache.activemq.artemis.api.core.Message;
-import org.apache.activemq.artemis.api.core.client.SendAcknowledgementHandler;
+import jakarta.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CountDownLatch;
+import com.example.artemis.jms.pool.ProducerPool;
 
 @Service
 public class ArtemisService {
@@ -24,30 +22,21 @@ public class ArtemisService {
         this.asyncProducerPool = asyncProducerPool;
     }
 
-    public void sendSync(String queueName, String message) throws Exception {
-        syncProducerPool.sendSync(queueName, message);
-        logger.debug("Sent SYNC message to {}: {}", queueName, message);
+    public void sendSync(String queueName, String message) throws JMSException {
+        try {
+            syncProducerPool.sendSync(queueName, message);
+        } catch (Exception e) {
+            logger.error("Failed to send SYNC JMS message to {}: {}", queueName, e.getMessage());
+        }
+        logger.debug("Sent SYNC JMS message to {}: {}", queueName, message);
     }
 
-    public void sendAsync(String queueName, String message) throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
-        asyncProducerPool.sendAsync(queueName, message, new SendAcknowledgementHandler() {
-            @Override
-            public void sendAcknowledged(Message msg) {
-                latch.countDown();
-                logger.debug("Async send acknowledged for queue {} message: {} latch: {}", 
-                             queueName, msg, latch.getCount());
-            }
-
-            @Override
-            public void sendFailed(Message msg, Exception e) {
-                latch.countDown();
-                logger.error("Async send FAILED for queue {} message: {} latch: {}. Exception: {}", 
-                             queueName, msg, latch.getCount(), e.toString());
-            }
-        });
-
-        // Optional: if you want blocking until ack
-        // latch.await(10, TimeUnit.SECONDS);
+    public void sendAsync(String queueName, String message) throws JMSException {
+        try {
+            asyncProducerPool.sendAsync(queueName, message);
+        } catch (Exception e) {
+            logger.error("Failed to send ASYNC JMS message to {}: {}", queueName, e.getMessage());
+        }
+        logger.debug("Sent ASYNC JMS message to {}: {}", queueName, message);
     }
 }
