@@ -25,6 +25,10 @@ public class ArtemisProperties {
     private String consumerMode = "ASYNC";    // SYNC or ASYNC
     private List<String> queues;
 
+    // --- Connection pool ---
+    private int maxConnections = 10; 
+    private int maxSessionsPerConnection = 10; 
+
     // --- Retry / reconnect ---
     private long retryInterval = 2000;
     private double retryIntervalMultiplier = 2.0;
@@ -75,6 +79,24 @@ public class ArtemisProperties {
     }
     public void setTrustStorePassword(String trustStorePassword) {
         this.trustStorePassword = trustStorePassword;
+    }
+
+    // Getter and Setter for maxConnections
+    public int getMaxConnections() {
+        return maxConnections;
+    }
+
+    public void setMaxConnections(int maxConnections) {
+        this.maxConnections = maxConnections;
+    }
+
+    // Getter and Setter for maxSessionsPerConnection
+    public int getMaxSessionsPerConnection() {
+        return maxSessionsPerConnection;
+    }
+
+    public void setMaxSessionsPerConnection(int maxSessionsPerConnection) {
+        this.maxSessionsPerConnection = maxSessionsPerConnection;
     }
 
     public int getProducerPoolSize() {

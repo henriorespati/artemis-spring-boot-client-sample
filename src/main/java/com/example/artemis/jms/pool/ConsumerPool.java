@@ -5,9 +5,8 @@ import jakarta.jms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ConsumerPool {
 
@@ -15,11 +14,8 @@ public class ConsumerPool {
 
     private final ConnectionFactory cf;
     private final ArtemisProperties props;
-
-    private final Map<String, List<Session>> sessionsPerQueue = new HashMap<>();
-    private final Map<String, List<MessageConsumer>> consumersPerQueue = new HashMap<>();
-    private final Map<String, List<Connection>> connectionsPerQueue = new HashMap<>();
-    private ExecutorService executor;
+    private final List<JMSContext> contexts = new ArrayList<>();
+    private final List<Thread> syncThreads = new ArrayList<>();
 
     public ConsumerPool(ConnectionFactory cf, ArtemisProperties props) {
         this.cf = cf;
@@ -28,96 +24,108 @@ public class ConsumerPool {
 
     // Called by Spring initMethod
     public void start() {
-        try {
-            init();
-            logger.info("ConsumerPool started on application startup");
-        } catch (JMSException e) {
-            logger.error("Failed to start ConsumerPool", e);
+        int threads = props.getConsumerThreadsPerQueue();
+        boolean isAsync = !"SYNC".equalsIgnoreCase(props.getConsumerMode());
+
+        for (String queueName : props.getQueues()) {
+            for (int i = 0; i < threads; i++) {
+                if (isAsync) {
+                    startAsyncConsumer(queueName);
+                } else {
+                    startSyncConsumer(queueName);
+                }
+            }
         }
+
+        logger.info("ConsumerPool started {} listeners for {} queues", threads, props.getQueues().size());
+    }
+
+    private void startAsyncConsumer(String queueName) {
+        JMSContext context = cf.createContext(
+                props.getUser(),
+                props.getPassword(),
+                JMSContext.AUTO_ACKNOWLEDGE
+        );
+
+        Queue queue = context.createQueue(queueName);
+        JMSConsumer consumer = context.createConsumer(queue);
+
+        consumer.setMessageListener(msg -> {
+            try {
+                if (msg instanceof TextMessage) {
+                    String body = ((TextMessage) msg).getText();
+                    logger.info("ASYNC received message on queue {}: {}", queueName, body);
+                } else {
+                    logger.warn("ASYNC received non-text message on queue {}: {}", queueName, msg);
+                }
+            } catch (Exception e) {
+                logger.error("Error processing ASYNC message on queue {}", queueName, e);
+            }
+        });
+
+        contexts.add(context);
+        logger.info("Started ASYNC consumer for queue {}", queueName);
+    }
+
+    private void startSyncConsumer(String queueName) {
+        JMSContext context = cf.createContext(
+                props.getUser(),
+                props.getPassword(),
+                JMSContext.AUTO_ACKNOWLEDGE
+        );
+
+        Queue queue = context.createQueue(queueName);
+        JMSConsumer consumer = context.createConsumer(queue);
+
+        Thread t = new Thread(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        Message msg = consumer.receive(5000); // timeout in ms
+                        if (msg != null) {
+                            if (msg instanceof TextMessage) {
+                                String body = ((TextMessage) msg).getText();
+                                logger.info("SYNC received message on queue {}: {}", queueName, body);
+                                throw new RuntimeException("Simulated processing error");
+                            } else {
+                                logger.warn("SYNC received non-text message on queue {}: {}", queueName, msg);
+                            }
+                        }
+                    } catch (JMSException e) {
+                        logger.error("Error receiving SYNC message on queue {}", queueName, e);
+                    } catch (Exception e) {
+                        // Handle other exceptions
+                    }
+                }
+            } finally {
+                try {
+                    consumer.close();
+                } catch (Exception e) {
+                    logger.warn("Error closing consumer for queue {}", queueName, e);
+                }
+            }
+        }, "SyncConsumer-" + queueName);
+
+        t.start();
+        contexts.add(context);
+        syncThreads.add(t);
+
+        logger.info("Started SYNC consumer thread for queue {}", queueName);
     }
 
     // Called by Spring destroyMethod
     public void stop() {
-        destroy();
-        logger.info("ConsumerPool stopped on application shutdown");
-    }
+        syncThreads.forEach(Thread::interrupt);
+        syncThreads.clear();
 
-    public void init() throws JMSException {
-        startListeners();
-    }
-
-    private void startListeners() throws JMSException {
-        executor = Executors.newCachedThreadPool();
-        int threads = props.getConsumerThreadsPerQueue();
-
-        for (String queueName : props.getQueues()) {
-            List<Session> sessions = new ArrayList<>();
-            List<MessageConsumer> consumers = new ArrayList<>();
-            List<Connection> connections = new ArrayList<>();
-
-            for (int i = 0; i < threads; i++) {
-                Connection connection = cf.createConnection(props.getUser(), props.getPassword());
-                Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                MessageConsumer consumer = session.createConsumer(session.createQueue(queueName));
-                if (consumer == null) {
-                    throw new JMSException("Failed to create consumer for queue: " + queueName);
-                } else {
-                    logger.info("Created consumer for queue: {}", queueName);
-                }
-
-                consumer.setMessageListener(msg -> {
-                    try {
-                        if (msg instanceof TextMessage) {
-                            String body = ((TextMessage) msg).getText();
-                            logger.info("Received JMS message on queue {}: {}", queueName, body);
-                        } else {
-                            logger.warn("Received non-text JMS message on queue {}: {}", queueName, msg);
-                        }
-                    } catch (JMSException e) {
-                        logger.error("Error processing JMS message on queue {}", queueName, e);
-                    }
-                });
-
-                connection.start();
-
-                sessions.add(session);
-                consumers.add(consumer);
-                connections.add(connection);
+        for (JMSContext context : contexts) {
+            try {
+                context.close();
+            } catch (Exception e) {
+                logger.warn("Error closing JMSContext", e);
             }
-
-            sessionsPerQueue.put(queueName, sessions);
-            consumersPerQueue.put(queueName, consumers);
-            connectionsPerQueue.put(queueName, connections);
         }
-
-        logger.info("ConsumerPool started listeners for {} queues", props.getQueues().size());
-    }
-
-    private void stopListeners() {
-        consumersPerQueue.values().forEach(list -> list.forEach(c -> {
-            try { c.close(); } catch (Exception ignored) {}
-        }));
-        consumersPerQueue.clear();
-
-        sessionsPerQueue.values().forEach(list -> list.forEach(s -> {
-            try { s.close(); } catch (Exception ignored) {}
-        }));
-        sessionsPerQueue.clear();
-
-        connectionsPerQueue.values().forEach(list -> list.forEach(c -> {
-            try { c.close(); } catch (Exception ignored) {}
-        }));
-        connectionsPerQueue.clear();
-
-        if (executor != null) {
-            executor.shutdownNow();
-            executor = null;
-        }
-
-        logger.info("All listeners stopped");
-    }
-
-    public void destroy() {
-        stopListeners();
+        contexts.clear();
+        logger.info("ConsumerPool stopped all listeners");
     }
 }

@@ -1,6 +1,7 @@
 package com.example.artemis.config;
 
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,23 +25,64 @@ public class ArtemisJmsConfig {
         this.props = props;
     }
 
-    // --- ConnectionFactories
-    @Bean(name = "syncConnectionFactory")
+    // --- Pooled ConnectionFactories
+    @Bean(name = "syncConnectionFactory", destroyMethod = "stop")
     public ConnectionFactory syncConnectionFactory() {
-        return buildConnectionFactory(true);
+        return buildPooledConnectionFactory(true);
     }
 
-    @Bean(name = "asyncConnectionFactory")
+    @Bean(name = "asyncConnectionFactory", destroyMethod = "stop")
     public ConnectionFactory asyncConnectionFactory() {
-        return buildConnectionFactory(false);
+        return buildPooledConnectionFactory(false);
     }
 
-    private ConnectionFactory buildConnectionFactory(boolean sync) {
-        // Prepare broker URLs with SSL parameters if needed
+    private ConnectionFactory buildPooledConnectionFactory(boolean sync) {
+        // Build Artemis core factory
+        ActiveMQConnectionFactory amqCf = new ActiveMQConnectionFactory(buildBrokerUrl());
+
+        // username/password
+        if (props.getUser() != null && !props.getUser().isEmpty()) {
+            amqCf.setUser(props.getUser());
+            amqCf.setPassword(props.getPassword());
+        }
+
+        // retry/reconnect settings
+        amqCf.setRetryInterval(props.getRetryInterval());
+        amqCf.setRetryIntervalMultiplier(props.getRetryIntervalMultiplier());
+        amqCf.setMaxRetryInterval(props.getMaxRetryInterval());
+        amqCf.setReconnectAttempts(props.getReconnectAttempts());
+
+        // confirmation window
+        amqCf.setConfirmationWindowSize(props.getConfirmationWindowSize());
+
+        // sync vs async sends
+        if (sync) {
+            amqCf.setBlockOnDurableSend(true);
+            amqCf.setBlockOnNonDurableSend(true);
+        } else {
+            amqCf.setBlockOnDurableSend(false);
+            amqCf.setBlockOnNonDurableSend(false);
+        }
+
+        // Wrap in pooled connection factory
+        JmsPoolConnectionFactory pooled = new JmsPoolConnectionFactory();
+        pooled.setConnectionFactory(amqCf);
+        pooled.setMaxConnections(props.getMaxConnections()); 
+        pooled.setMaxSessionsPerConnection(props.getMaxSessionsPerConnection()); 
+        pooled.setBlockIfSessionPoolIsFull(true);
+        pooled.setBlockIfSessionPoolIsFullTimeout(5000);
+        pooled.setUseAnonymousProducers(false); 
+
+        logger.info("Created {} pooled Artemis ConnectionFactory (sync={})", 
+                    pooled.getClass().getSimpleName(), sync);
+        return (ConnectionFactory) pooled;
+    }
+
+    private String buildBrokerUrl() {
         List<String> urls = new ArrayList<>();
         for (String broker : props.getBrokerUrls()) {
-            if (props.getSslEnabled() && 
-                props.getTrustStorePath() != null && 
+            if (props.getSslEnabled() &&
+                props.getTrustStorePath() != null &&
                 !props.getTrustStorePath().isEmpty()) {
                 broker += "?sslEnabled=true" +
                           "&trustStorePath=" + props.getTrustStorePath() +
@@ -49,46 +91,18 @@ public class ArtemisJmsConfig {
             }
             urls.add(broker);
         }
-
         String url = String.join(",", urls);
         logger.info("Connecting to Artemis broker(s) at: {}", url);
-
-        ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory(url);
-
-        // username/password
-        if (props.getUser() != null && !props.getUser().isEmpty()) {
-            cf.setUser(props.getUser());
-            cf.setPassword(props.getPassword());
-        }
-
-        // retry/reconnect settings
-        cf.setRetryInterval(props.getRetryInterval());
-        cf.setRetryIntervalMultiplier(props.getRetryIntervalMultiplier());
-        cf.setMaxRetryInterval(props.getMaxRetryInterval());
-        cf.setReconnectAttempts(props.getReconnectAttempts());
-
-        // confirmation window
-        cf.setConfirmationWindowSize(props.getConfirmationWindowSize());
-
-        // sync vs async sends
-        if (sync) {
-            cf.setBlockOnDurableSend(true);
-            cf.setBlockOnNonDurableSend(true);
-        } else {
-            cf.setBlockOnDurableSend(false);
-            cf.setBlockOnNonDurableSend(false);
-        }
-
-        return cf;
+        return url;
     }
 
     // --- ProducerPools
-    @Bean(name = "syncProducerPool", initMethod = "init", destroyMethod = "destroy")
+    @Bean(name = "syncProducerPool")
     public ProducerPool syncProducerPool(@Qualifier("syncConnectionFactory") ConnectionFactory cf) {
         return new ProducerPool(cf, props);
     }
 
-    @Bean(name = "asyncProducerPool", initMethod = "init", destroyMethod = "destroy")
+    @Bean(name = "asyncProducerPool")
     public ProducerPool asyncProducerPool(@Qualifier("asyncConnectionFactory") ConnectionFactory cf) {
         return new ProducerPool(cf, props);
     }
@@ -100,8 +114,10 @@ public class ArtemisJmsConfig {
             @Qualifier("asyncConnectionFactory") ConnectionFactory asyncCF) {
 
         if ("SYNC".equalsIgnoreCase(props.getConsumerMode())) {
+            logger.info("Using SYNC ConsumerPool");
             return new ConsumerPool(syncCF, props);
         } else {
+            logger.info("Using ASYNC ConsumerPool");
             return new ConsumerPool(asyncCF, props);
         }
     }

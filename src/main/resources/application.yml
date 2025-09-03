@@ -11,13 +11,15 @@ artemis:
     ssl-enabled: true
     trust-store-path: truststore.p12
     trust-store-password: changeit
+    max-connections: 2
+    max-sessions-per-connection: 10
     producer-pool-size: 2
     consumer-threads-per-queue: 1
-    consumer-mode: ASYNC
+    consumer-mode: SYNC
     retry-interval: 1000
     retry-interval-multiplier: 1.5
     max-retry-interval: 5000
-    reconnect-attempts: 5
+    reconnect-attempts: 3
     confirmation-window-size: 1024
     queues:
       - exampleQueue1

@@ -13,6 +13,7 @@
     <artemis.version>2.33.0</artemis.version>
     <commons.pool2.version>2.12.0</commons.pool2.version>
     <jakarta.jms.version>3.1.0</jakarta.jms.version>
+    <pooled.jms.version>3.1.7</pooled.jms.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
   </properties>
 
@@ -52,6 +53,13 @@
       <groupId>org.apache.activemq</groupId>
       <artifactId>artemis-core-client</artifactId>
       <version>${artemis.version}</version>
+    </dependency>
+
+    <!-- Pooled JMS (for connection pooling) -->
+    <dependency>
+      <groupId>org.messaginghub</groupId>
+      <artifactId>pooled-jms</artifactId>
+      <version>${pooled.jms.version}</version>
     </dependency>
 
     <!-- Commons (required by Artemis) -->

@@ -28,7 +28,6 @@ public class ArtemisService {
         } catch (Exception e) {
             logger.error("Failed to send SYNC JMS message to {}: {}", queueName, e.getMessage());
         }
-        logger.debug("Sent SYNC JMS message to {}: {}", queueName, message);
     }
 
     public void sendAsync(String queueName, String message) throws JMSException {
@@ -37,6 +36,5 @@ public class ArtemisService {
         } catch (Exception e) {
             logger.error("Failed to send ASYNC JMS message to {}: {}", queueName, e.getMessage());
         }
-        logger.debug("Sent ASYNC JMS message to {}: {}", queueName, message);
     }
 }
