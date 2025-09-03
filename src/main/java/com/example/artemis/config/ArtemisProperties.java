@@ -10,7 +10,7 @@ import java.util.List;
 public class ArtemisProperties {
 
     // --- Connection settings ---
-    private List<String> brokerUrls;          // e.g. [ "ssl://127.0.0.1:61617" ]
+    private List<String> brokerUrls;
     private String user;
     private String password;
 

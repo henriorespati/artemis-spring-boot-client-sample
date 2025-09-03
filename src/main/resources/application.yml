@@ -20,7 +20,7 @@ artemis:
     retry-interval-multiplier: 1.5
     max-retry-interval: 5000
     reconnect-attempts: 3
-    confirmation-window-size: 1024
+    confirmation-window-size: 1048576
     queues:
       - exampleQueue1
       - exampleQueue2
