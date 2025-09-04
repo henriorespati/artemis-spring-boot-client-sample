@@ -1,6 +1,5 @@
 package com.example.artemis.config;
 
-import com.example.artemis.jms.pool.ConsumerPool;
 import com.example.artemis.jms.pool.ProducerPool;
 import jakarta.jms.ConnectionFactory;
 
@@ -45,28 +44,10 @@ public class ArtemisJmsConfig {
         return pooled;
     }
 
-
     @Bean
     public ProducerPool producerPool(ConnectionFactory connectionFactory) {
         logger.info("Creating ProducerPool for queues {}", appProps.getQueues());
         return new ProducerPool(connectionFactory, appProps.getQueues());
-    }
-
-    @Bean(initMethod = "start", destroyMethod = "stop")
-    public ConsumerPool consumerPool(ConnectionFactory connectionFactory) {
-        ConsumerPool.Mode mode = "ASYNC".equalsIgnoreCase(appProps.getConsumer().getMode())
-                ? ConsumerPool.Mode.ASYNC
-                : ConsumerPool.Mode.SYNC;
-
-        logger.info("Creating ConsumerPool with mode={} and threadsPerQueue={}",
-                mode, appProps.getConsumer().getThreadsPerQueue());
-
-        return new ConsumerPool(
-                connectionFactory,
-                appProps.getQueues(),
-                appProps.getConsumer().getThreadsPerQueue(),
-                mode
-        );
     }
 
 }

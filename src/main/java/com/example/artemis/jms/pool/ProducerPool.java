@@ -17,17 +17,6 @@ public class ProducerPool {
         this.queues = queues;
     }
 
-    public void sendSync(String queueName, String message) {
-        try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
-            Queue queue = context.createQueue(queueName);
-            context.createProducer().send(queue, message);
-            logger.debug("Sent SYNC message to {}: {}", queueName, message);
-        } catch (JMSRuntimeException e) {
-            logger.error("Failed to send SYNC message to {}", queueName, e);
-            throw e;
-        }
-    }
-
     public void sendAsync(String queueName, String message) {
         try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
             Queue queue = context.createQueue(queueName);
