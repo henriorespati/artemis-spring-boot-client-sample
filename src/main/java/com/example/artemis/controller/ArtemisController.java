@@ -24,15 +24,5 @@ public class ArtemisController {
             return ResponseEntity.status(500).body("Error sending sync message: " + e.getMessage());
         }
     }
-
-    @PostMapping("/send/async/{queueName}")
-    public ResponseEntity<String> sendAsync(@PathVariable("queueName") String queueName,
-                                            @RequestBody String message) {
-        try {
-            service.sendAsync(queueName, message);
-            return ResponseEntity.ok("Async message sent");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error sending async message: " + e.getMessage());
-        }
-    }
+    
 }
