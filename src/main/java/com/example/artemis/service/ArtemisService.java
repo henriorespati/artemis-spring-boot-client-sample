@@ -1,9 +1,7 @@
 package com.example.artemis.service;
 
-import jakarta.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.example.artemis.jms.pool.ProducerPool;
@@ -13,28 +11,31 @@ public class ArtemisService {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisService.class);
 
-    private final ProducerPool syncProducerPool;
-    private final ProducerPool asyncProducerPool;
+    private final ProducerPool producerPool;
 
-    public ArtemisService(@Qualifier("syncProducerPool") ProducerPool syncProducerPool,
-                          @Qualifier("asyncProducerPool") ProducerPool asyncProducerPool) {
-        this.syncProducerPool = syncProducerPool;
-        this.asyncProducerPool = asyncProducerPool;
+    public ArtemisService(ProducerPool producerPool) {
+        this.producerPool = producerPool;
     }
 
-    public void sendSync(String queueName, String message) throws JMSException {
+    /**
+     * Send a JMS message synchronously
+     */
+    public void sendSync(String queueName, String message) {
         try {
-            syncProducerPool.sendSync(queueName, message);
+            producerPool.sendSync(queueName, message);
         } catch (Exception e) {
-            logger.error("Failed to send SYNC JMS message to {}: {}", queueName, e.getMessage());
+            logger.error("Failed to send SYNC JMS message to {}: {}", queueName, e.getMessage(), e);
         }
     }
 
-    public void sendAsync(String queueName, String message) throws JMSException {
+    /**
+     * Send a JMS message asynchronously
+     */
+    public void sendAsync(String queueName, String message) {
         try {
-            asyncProducerPool.sendAsync(queueName, message);
+            producerPool.sendAsync(queueName, message);
         } catch (Exception e) {
-            logger.error("Failed to send ASYNC JMS message to {}: {}", queueName, e.getMessage());
+            logger.error("Failed to send ASYNC JMS message to {}: {}", queueName, e.getMessage(), e);
         }
     }
 }

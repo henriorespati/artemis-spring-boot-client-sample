@@ -9,6 +9,8 @@
 
   <properties>
     <java.version>17</java.version>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
     <spring.boot.version>3.0.13</spring.boot.version>
     <artemis.version>2.33.0</artemis.version>
     <commons.pool2.version>2.12.0</commons.pool2.version>
@@ -39,6 +41,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jms</artifactId>
     </dependency>
 
     <!-- Artemis JMS Client (needed for ActiveMQConnectionFactory with Jakarta JMS) -->
