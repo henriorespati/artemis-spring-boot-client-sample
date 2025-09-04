@@ -38,4 +38,15 @@ public class ArtemisService {
             logger.error("Failed to send ASYNC JMS message to {}: {}", queueName, e.getMessage(), e);
         }
     }
+
+    /**
+     * Send a JMS message using request-reply pattern
+     */
+    public void sendRequest(String queueName, String message) {
+        try {
+            producerPool.sendAndReceive(queueName, message, 5000);
+        } catch (Exception e) {
+            logger.error("Failed to send REQUEST-REPLY JMS message to {}: {}", queueName, e.getMessage(), e);
+        }
+    }
 }

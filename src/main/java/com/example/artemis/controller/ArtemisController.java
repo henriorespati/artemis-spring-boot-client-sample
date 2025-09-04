@@ -35,4 +35,15 @@ public class ArtemisController {
             return ResponseEntity.status(500).body("Error sending async message: " + e.getMessage());
         }
     }
+
+    @PostMapping("/send/request/{queueName}")
+    public ResponseEntity<String> sendRequest(@PathVariable("queueName") String queueName,
+                                            @RequestBody String message) {
+        try {
+            service.sendRequest(queueName, message);
+            return ResponseEntity.ok("Request message sent");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error sending request message: " + e.getMessage());
+        }
+    }
 }
