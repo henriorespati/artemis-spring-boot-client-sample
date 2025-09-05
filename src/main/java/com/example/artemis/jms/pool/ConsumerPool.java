@@ -141,8 +141,8 @@ public class ConsumerPool {
                 TextMessage reply = context.createTextMessage("Reply to: " + text);
                 reply.setJMSCorrelationID(correlationId);
 
+                logger.debug("Sending reply for correlationId={} back to {}", correlationId, replyTo);
                 context.createProducer().send(replyTo, reply);
-                logger.debug("Sent reply for correlationId={} back to {}", correlationId, replyTo);
             } else {
                 logger.warn("No JMSReplyTo set on message, cannot reply (correlationId={})", correlationId);
             }

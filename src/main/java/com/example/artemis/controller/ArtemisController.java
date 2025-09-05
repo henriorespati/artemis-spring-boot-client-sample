@@ -36,12 +36,23 @@ public class ArtemisController {
         }
     }
 
-    @PostMapping("/send/request/{queueName}")
-    public ResponseEntity<String> sendRequest(@PathVariable("queueName") String queueName,
+    @PostMapping("/send/sync/request/{queueName}")
+    public ResponseEntity<String> sendRequestSync(@PathVariable("queueName") String queueName,
                                             @RequestBody String message) {
         try {
-            service.sendRequest(queueName, message);
-            return ResponseEntity.ok("Request message sent");
+            service.sendRequestSync(queueName, message);
+            return ResponseEntity.ok("Sync request message sent");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error sending request message: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/send/async/request/{queueName}")
+    public ResponseEntity<String> sendRequestAsync(@PathVariable("queueName") String queueName,
+                                            @RequestBody String message) {
+        try {
+            service.sendRequestAsync(queueName, message);
+            return ResponseEntity.ok("Async request message sent");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error sending request message: " + e.getMessage());
         }

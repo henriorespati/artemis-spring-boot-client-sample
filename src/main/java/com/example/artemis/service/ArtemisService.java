@@ -40,13 +40,31 @@ public class ArtemisService {
     }
 
     /**
-     * Send a JMS message using request-reply pattern
+     * Send a JMS message using request-reply pattern synchronously
      */
-    public void sendRequest(String queueName, String message) {
+    public void sendRequestSync(String queueName, String message) {
         try {
-            producerPool.sendAndReceive(queueName, message, 5000);
+            producerPool.sendAndReceiveSync(queueName, message, 5000);
         } catch (Exception e) {
-            logger.error("Failed to send REQUEST-REPLY JMS message to {}: {}", queueName, e.getMessage(), e);
+            logger.error("Failed to send SYNC REQUEST JMS message to {}: {}", queueName, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Send a JMS message using request-reply pattern asynchronously
+     * Callback will log the reply when it arrives
+     */
+    public void sendRequestAsync(String queueName, String message) {
+        try {
+            producerPool.sendAndReceiveAsync(queueName, message)
+                .thenAccept(replyText -> {
+                    logger.info("ASYNC reply message: {}", replyText);
+                }).exceptionally(ex -> {
+                    logger.error("Failed to receive ASYNC reply from {}: {}", queueName, ex.getMessage(), ex);
+                    return null;
+                });
+        } catch (Exception e) {
+            logger.error("Failed to send ASYNC REQUEST JMS message to {}: {}", queueName, e.getMessage(), e);
         }
     }
 }
