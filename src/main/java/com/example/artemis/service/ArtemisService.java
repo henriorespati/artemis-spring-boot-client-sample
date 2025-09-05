@@ -18,28 +18,6 @@ public class ArtemisService {
     }
 
     /**
-     * Send a JMS message synchronously
-     */
-    public void sendSync(String queueName, String message) {
-        try {
-            producerPool.sendSync(queueName, message);
-        } catch (Exception e) {
-            logger.error("Failed to send SYNC JMS message to {}: {}", queueName, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Send a JMS message asynchronously
-     */
-    public void sendAsync(String queueName, String message) {
-        try {
-            producerPool.sendAsync(queueName, message);
-        } catch (Exception e) {
-            logger.error("Failed to send ASYNC JMS message to {}: {}", queueName, e.getMessage(), e);
-        }
-    }
-
-    /**
      * Send a JMS message using request-reply pattern synchronously
      */
     public void sendRequestSync(String queueName, String message) {
