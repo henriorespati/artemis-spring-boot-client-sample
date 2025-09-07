@@ -18,57 +18,6 @@ public class ArtemisService {
     }
 
     /**
-     * Send a JMS message synchronously
-     */
-    public void sendSync(String queueName, String message) {
-        try {
-            producerPool.sendSync(queueName, message);
-        } catch (Exception e) {
-            logger.error("Failed to send SYNC JMS message to {}: {}", queueName, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Send a JMS message asynchronously
-     */
-    public void sendAsync(String queueName, String message) {
-        try {
-            producerPool.sendAsync(queueName, message);
-        } catch (Exception e) {
-            logger.error("Failed to send ASYNC JMS message to {}: {}", queueName, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Send a JMS message using request-reply pattern synchronously
-     */
-    public void sendRequestSync(String queueName, String message) {
-        try {
-            producerPool.sendAndReceiveSync(queueName, message, 5000);
-        } catch (Exception e) {
-            logger.error("Failed to send SYNC REQUEST JMS message to {}: {}", queueName, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Send a JMS message using request-reply pattern asynchronously
-     * Callback will log the reply when it arrives
-     */
-    public void sendRequestAsync(String queueName, String message) {
-        try {
-            producerPool.sendAndReceiveAsync(queueName, message)
-                .thenAccept(replyText -> {
-                    logger.info("ASYNC reply message: {}", replyText);
-                }).exceptionally(ex -> {
-                    logger.error("Failed to receive ASYNC reply from {}: {}", queueName, ex.getMessage(), ex);
-                    return null;
-                });
-        } catch (Exception e) {
-            logger.error("Failed to send ASYNC REQUEST JMS message to {}: {}", queueName, e.getMessage(), e);
-        }
-    }
-
-    /**
      * Send a JMS message using a transacted session (commit after single send)
      */
     public void sendTx(String queueName, String message) {

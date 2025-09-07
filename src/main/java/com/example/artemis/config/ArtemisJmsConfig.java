@@ -53,27 +53,13 @@ public class ArtemisJmsConfig {
 
     @Bean(initMethod = "start", destroyMethod = "stop")
     public ConsumerPool consumerPool(ConnectionFactory connectionFactory) {
-        ConsumerPool.Mode mode;
-        String configuredMode = appProps.getConsumer().getMode();
-
-        if ("ASYNC".equalsIgnoreCase(configuredMode)) {
-            mode = ConsumerPool.Mode.ASYNC;
-        } else if ("REPLY".equalsIgnoreCase(configuredMode)) {
-            mode = ConsumerPool.Mode.REPLY;
-        } else if ("TX".equalsIgnoreCase(configuredMode)) {
-            mode = ConsumerPool.Mode.TX;
-        } else {
-            mode = ConsumerPool.Mode.SYNC;
-        }
-
-        logger.info("Creating ConsumerPool with mode={} and threadsPerQueue={}",
-                mode, appProps.getConsumer().getThreadsPerQueue());
+        logger.info("Creating ConsumerPool threadsPerQueue={}",
+                appProps.getConsumer().getThreadsPerQueue());
 
         return new ConsumerPool(
                 connectionFactory,
                 appProps.getQueues(),
-                appProps.getConsumer().getThreadsPerQueue(),
-                mode
+                appProps.getConsumer().getThreadsPerQueue()
         );
     }
 
