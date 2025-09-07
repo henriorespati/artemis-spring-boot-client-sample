@@ -17,6 +17,7 @@ public class ConsumerPool {
     private final List<JMSContext> contexts = new ArrayList<>();
     private final List<Thread> syncThreads = new ArrayList<>();
     private final List<Thread> replyThreads = new ArrayList<>();
+    private final List<Thread> txThreads = new ArrayList<>();
     private final List<String> queues;
 
     private final int threadsPerQueue;
@@ -99,7 +100,7 @@ public class ConsumerPool {
 
         t.start();
         contexts.add(context);
-        syncThreads.add(t);
+        txThreads.add(t);
         logger.info("Started SYNC consumer thread for queue {}", queueName);
     }
 
@@ -204,6 +205,9 @@ public class ConsumerPool {
 
         replyThreads.forEach(Thread::interrupt);
         replyThreads.clear();
+
+        txThreads.forEach(Thread::interrupt);
+        txThreads.clear();
 
         contexts.forEach(ctx -> {
             try { ctx.close(); } catch (Exception ignored) {}
