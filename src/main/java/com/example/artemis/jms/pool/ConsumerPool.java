@@ -10,7 +10,7 @@ public class ConsumerPool {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsumerPool.class);
 
-    public enum Mode { SYNC, ASYNC, REPLY }
+    public enum Mode { SYNC, ASYNC, REPLY, TX }
 
     private final ConnectionFactory connectionFactory;
     private final Mode mode;
@@ -38,6 +38,8 @@ public class ConsumerPool {
                     startSyncConsumer(queueName);
                 } else if (mode == Mode.REPLY) {
                     startReplier(queueName);
+                } else if (mode == Mode.TX) {
+                    startTxConsumer(queueName);
                 }
             }
         }
@@ -149,6 +151,51 @@ public class ConsumerPool {
         } catch (JMSException e) {
             logger.error("Failed to process request on {}", queueName, e);
         }
+    }
+
+    private void startTxConsumer(String queueName) {
+        JMSContext context = connectionFactory.createContext(JMSContext.SESSION_TRANSACTED);
+        Queue queue = context.createQueue(queueName);
+        JMSConsumer consumer = context.createConsumer(queue);
+
+        Thread t = new Thread(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    Message msg = consumer.receive(5000);
+                    if (msg != null) {
+                        try {
+                            int deliveryCount = msg.getIntProperty("JMSXDeliveryCount");
+                            if (msg instanceof TextMessage tm) {
+                                logger.info("TX received message on {}: {} (deliveryCount={})",
+                                        queueName, tm.getText(), deliveryCount);
+
+                                // simulate processing OK
+                                context.commit();
+
+                            } else {
+                                logger.warn("TX received non-text message on {} (deliveryCount={}): {}",
+                                        queueName, deliveryCount, msg);
+                                context.rollback(); // let broker retry
+                            }
+                        } catch (Exception e) {
+                            logger.error("Error processing TX message on queue {}, rolling back", queueName, e);
+                            try {
+                                context.rollback(); // retry handled by broker
+                            } catch (Exception rollbackEx) {
+                                logger.error("Rollback failed for queue {}", queueName, rollbackEx);
+                            }
+                        }
+                    }
+                }
+            } finally {
+                try { consumer.close(); } catch (Exception ignored) {}
+            }
+        }, "TxConsumer-" + queueName);
+
+        t.start();
+        contexts.add(context);
+        syncThreads.add(t);
+        logger.info("Started TX consumer thread for queue {}", queueName);
     }
 
     public void stop() {

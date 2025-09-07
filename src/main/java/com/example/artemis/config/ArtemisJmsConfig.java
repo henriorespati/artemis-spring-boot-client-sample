@@ -60,6 +60,8 @@ public class ArtemisJmsConfig {
             mode = ConsumerPool.Mode.ASYNC;
         } else if ("REPLY".equalsIgnoreCase(configuredMode)) {
             mode = ConsumerPool.Mode.REPLY;
+        } else if ("TX".equalsIgnoreCase(configuredMode)) {
+            mode = ConsumerPool.Mode.TX;
         } else {
             mode = ConsumerPool.Mode.SYNC;
         }

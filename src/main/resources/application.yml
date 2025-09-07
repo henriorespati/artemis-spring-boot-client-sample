@@ -50,7 +50,7 @@ app:
       - exampleQueue2
     confirmation-window-size: 1048576      # default -1 (disabled), required for async sends
     consumer:
-      mode: REPLY
+      mode: TX
       threads-per-queue: 2
 
 logging:
