@@ -4,44 +4,16 @@ server:
 spring:
   artemis:
     # Artemis broker connection
-    broker-url: (tcp://localhost:61616,tcp://localhost:61716)?useTopologyForLoadBalancing=true
+    # !!! Remove verifyHost=false for production use !!!
+    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false
     user: admin
     password: password
-    mode: native                           # default: "embedded" (switches to "native" if broker-url is set)
+    mode: native                           # default: "embedded" (switch to "native" if broker-url is set)
 
     pool:
       enabled: true                        # default false (pooling disabled by default)
-      block-if-full: true                  # default true
-      block-if-full-timeout: -1ms          # default -1 (indefinite wait)
-      idle-timeout: 30s                    # default 30s
       max-connections: 1                   # default 1
       max-sessions-per-connection: 500     # default 500
-      time-between-expiration-check: -1ms  # default -1 (disabled)
-      use-anonymous-producers: true        # default true
-
-  jms:
-    # Caching / session settings
-    cache:
-      enabled: true                        # default true
-      session-cache-size: 1                # default 1 (how many sessions cached per connection)
-
-    # JMS Listener container settings
-    listener:
-      acknowledge-mode: auto               # default "auto" (options: auto, client, dups_ok)
-      auto-startup: true                   # default true
-      # concurrency:                         # no default, must be provided (ex: "1-1")
-      # max-concurrency:                     # no default (unbounded if not set)
-      receive-timeout: 1000                # default 1000 ms
-
-    template:
-      default-destination:                 # no default
-      delivery-mode: persistent            # default "persistent"
-      priority: 4                          # default priority 4 (0–9)
-      qos-enabled: false                   # default false (ignores deliveryMode, priority, ttl unless enabled)
-      receive-timeout: 1000                # default 1000 ms
-      time-to-live: 0                      # default 0 (messages never expire)
-
-    pub-sub-domain: false                  # default false (false=Queues, true=Topics)
     
 app:
   artemis:
@@ -50,7 +22,7 @@ app:
       - exampleQueue2
     confirmation-window-size: 1048576      # default -1 (disabled), required for async sends
     consumer:
-      mode: SYNC
+      mode: ASYNC                          # SYNC, ASYNC, REPLY, or TX
       threads-per-queue: 2
 
 logging:

@@ -12,8 +12,8 @@
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <spring.boot.version>3.0.13</spring.boot.version>
-    <artemis.version>2.33.0</artemis.version>
-    <commons.pool2.version>2.12.0</commons.pool2.version>
+    <artemis.version>2.33.0.redhat-00016</artemis.version>
+    <commons.pool2.version>2.12.1</commons.pool2.version>
     <jakarta.jms.version>3.1.0</jakarta.jms.version>
     <pooled.jms.version>3.1.7</pooled.jms.version>
     <jboss.logging.version>3.5.0.Final</jboss.logging.version>
@@ -35,7 +35,7 @@
     <!-- Spring Boot -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter</artifactId>
+      <artifactId>spring-boot-starter-artemis</artifactId>
     </dependency>
 
     <dependency>
