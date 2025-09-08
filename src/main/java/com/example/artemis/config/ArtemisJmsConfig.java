@@ -3,11 +3,8 @@ package com.example.artemis.config;
 import com.example.artemis.jms.pool.ConsumerPool;
 import jakarta.jms.ConnectionFactory;
 
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
