@@ -1,84 +1,67 @@
 package com.example.artemis.config;
 
-import com.example.artemis.jms.pool.ConsumerPool;
-import com.example.artemis.jms.pool.ProducerPool;
 import jakarta.jms.ConnectionFactory;
-
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.support.converter.SimpleMessageConverter;
 
 @Configuration
 public class ArtemisJmsConfig {
 
-    private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
+    @Value("${spring.artemis.user}")
+    private String artemisUser;
 
-    private final ArtemisProperties appProps;
+    @Value("${spring.artemis.password}")
+    private String artemisPassword;
 
-    public ArtemisJmsConfig(ArtemisProperties appProps) {
-        this.appProps = appProps;
+    @Value("${spring.artemis.broker-url}")
+    private String brokerUrl;
+
+    @Bean
+    public ActiveMQConnectionFactory activeMQConnectionFactory() {
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
+        factory.setUser(artemisUser);
+        factory.setPassword(artemisPassword);
+        return factory;
     }
 
     @Bean
-    public ConnectionFactory pooledConnectionFactory(
-        @Value("${spring.artemis.broker-url}") String brokerUrl,
-        @Value("${spring.artemis.user}") String user,
-        @Value("${spring.artemis.password}") String password,
-        @Value("${spring.artemis.pool.max-connections}") int maxConnections,
-        @Value("${spring.artemis.pool.max-sessions-per-connection}") int maxSessionsPerConnection) {
+    public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setConcurrency("5-10"); // allow 5-10 concurrent consumers
+        factory.setSessionTransacted(false); // non-transactional session
+        return factory;
+    }
 
-        ActiveMQConnectionFactory amqCf = new ActiveMQConnectionFactory(brokerUrl);
-        amqCf.setUser(user);
-        amqCf.setPassword(password);
-        // amqCf.setConfirmationWindowSize(appProps.getConfirmationWindowSize());
-        // amqCf.setBlockOnDurableSend(appProps.isBlockOnDurableSend());
-        logger.debug("Artemis ConnectionFactory configured with brokerUrl={}, user={}, confirmationWindowSize={}, blockOnDurableSend={}, consumerWindowSize={}",
-                brokerUrl, user, amqCf.getConfirmationWindowSize(), amqCf.isBlockOnDurableSend(), amqCf.getConsumerWindowSize());
-
-        JmsPoolConnectionFactory pooled = new JmsPoolConnectionFactory();
-        pooled.setConnectionFactory(amqCf);
-        pooled.setMaxConnections(maxConnections);
-        pooled.setMaxSessionsPerConnection(maxSessionsPerConnection);
-        logger.debug("Pooled JMS ConnectionFactory configured with maxConnections={}, maxSessionsPerConnection={}",
-                pooled.getMaxConnections(), pooled.getMaxSessionsPerConnection());
-
-        return pooled;
+    // Transactional listener factory
+    @Bean
+    public DefaultJmsListenerContainerFactory transactedJmsListenerContainerFactory(
+            ConnectionFactory connectionFactory) {
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setSessionTransacted(true); // enable transaction
+        factory.setConcurrency("1-1");
+        return factory;
     }
 
     @Bean
-    public ProducerPool producerPool(ConnectionFactory connectionFactory) {
-        logger.info("Creating ProducerPool");
-        return new ProducerPool(connectionFactory);
+    public JmsTemplate jmsTemplate(ConnectionFactory connectionFactory) {
+        JmsTemplate template = new JmsTemplate(connectionFactory);
+        template.setMessageConverter(new SimpleMessageConverter());
+        template.setSessionTransacted(false); // non-transactional session
+        return template;
     }
 
-    @Bean(initMethod = "start", destroyMethod = "stop")
-    public ConsumerPool consumerPool(ConnectionFactory connectionFactory) {
-        ConsumerPool.Mode mode;
-        String configuredMode = appProps.getConsumer().getMode();
-
-        if ("ASYNC".equalsIgnoreCase(configuredMode)) {
-            mode = ConsumerPool.Mode.ASYNC;
-        } else if ("REPLY".equalsIgnoreCase(configuredMode)) {
-            mode = ConsumerPool.Mode.REPLY;
-        } else if ("TX".equalsIgnoreCase(configuredMode)) {
-            mode = ConsumerPool.Mode.TX;
-        } else {
-            mode = ConsumerPool.Mode.SYNC;
-        }
-
-        logger.info("Creating ConsumerPool with mode={} and threadsPerQueue={}",
-                mode, appProps.getConsumer().getThreadsPerQueue());
-
-        return new ConsumerPool(
-                connectionFactory,
-                appProps.getQueues(),
-                appProps.getConsumer().getThreadsPerQueue(),
-                mode
-        ); 
+    @Bean
+    public JmsTemplate transactionalJmsTemplate(ConnectionFactory connectionFactory) {
+        JmsTemplate template = new JmsTemplate(connectionFactory);
+        template.setMessageConverter(new SimpleMessageConverter());
+        template.setSessionTransacted(true); // Transacted session
+        return template;
     }
-
 }
