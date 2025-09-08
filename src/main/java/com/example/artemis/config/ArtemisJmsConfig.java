@@ -13,16 +13,10 @@ public class ArtemisJmsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
 
-    private final ArtemisProperties appProps;
-
-    public ArtemisJmsConfig(ArtemisProperties appProps) {
-        this.appProps = appProps;
-    }
-
     @Bean
     public ProducerPool producerPool(ConnectionFactory connectionFactory) {
-        logger.info("Creating ProducerPool for queues {}", appProps.getQueues());
-        return new ProducerPool(connectionFactory, appProps.getQueues());
+        logger.info("Creating ProducerPool");
+        return new ProducerPool(connectionFactory);
     }
 
 }
