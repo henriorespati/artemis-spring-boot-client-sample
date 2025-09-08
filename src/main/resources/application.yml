@@ -5,7 +5,7 @@ spring:
   artemis:
     # Artemis broker connection
     # !!! Remove verifyHost=false for production use !!!
-    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false
+    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&confirmationWindowSize=1048576&blockOnDurableSend=true&consumerWindowSize=1048576
     user: admin
     password: password
     mode: native                           # default: "embedded" (switch to "native" if broker-url is set)
@@ -20,7 +20,6 @@ app:
     queues:
       - exampleQueue1
       - exampleQueue2
-    confirmation-window-size: 1048576      # default -1 (disabled), required for async sends
     consumer:
       mode: SYNC                           # SYNC, ASYNC, REPLY, or TX
       threads-per-queue: 2

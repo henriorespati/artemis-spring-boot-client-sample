@@ -34,13 +34,17 @@ public class ArtemisJmsConfig {
         ActiveMQConnectionFactory amqCf = new ActiveMQConnectionFactory(brokerUrl);
         amqCf.setUser(user);
         amqCf.setPassword(password);
-        amqCf.setConfirmationWindowSize(appProps.getConfirmationWindowSize());
+        // amqCf.setConfirmationWindowSize(appProps.getConfirmationWindowSize());
+        // amqCf.setBlockOnDurableSend(appProps.isBlockOnDurableSend());
+        logger.debug("Artemis ConnectionFactory configured with brokerUrl={}, user={}, confirmationWindowSize={}, blockOnDurableSend={}, consumerWindowSize={}",
+                brokerUrl, user, amqCf.getConfirmationWindowSize(), amqCf.isBlockOnDurableSend(), amqCf.getConsumerWindowSize());
 
         JmsPoolConnectionFactory pooled = new JmsPoolConnectionFactory();
         pooled.setConnectionFactory(amqCf);
         pooled.setMaxConnections(maxConnections);
         pooled.setMaxSessionsPerConnection(maxSessionsPerConnection);
-        pooled.setUseAnonymousProducers(true);
+        logger.debug("Pooled JMS ConnectionFactory configured with maxConnections={}, maxSessionsPerConnection={}",
+                pooled.getMaxConnections(), pooled.getMaxSessionsPerConnection());
 
         return pooled;
     }
@@ -74,7 +78,7 @@ public class ArtemisJmsConfig {
                 appProps.getQueues(),
                 appProps.getConsumer().getThreadsPerQueue(),
                 mode
-        );
+        ); 
     }
 
 }

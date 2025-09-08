@@ -22,7 +22,10 @@ public class ArtemisService {
      */
     public void sendSync(String queueName, String message) {
         try {
+            long start = System.nanoTime();
             producerPool.sendSync(queueName, message);
+            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+            logger.debug("Sent SYNC message to {} in {} ms", queueName, elapsedMs);
         } catch (Exception e) {
             logger.error("Failed to send SYNC JMS message to {}: {}", queueName, e.getMessage(), e);
         }

@@ -80,7 +80,10 @@ public class ConsumerPool {
         Thread t = new Thread(() -> {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    Message msg = consumer.receive(5000);
+                    long start = System.nanoTime(); 
+                    Message msg = consumer.receive(5000); 
+                    long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+                    logger.debug("SYNC receive on {} took {} ms", queueName, elapsedMs);
                     if (msg != null) {
                         try {
                             if (msg instanceof TextMessage tm) {

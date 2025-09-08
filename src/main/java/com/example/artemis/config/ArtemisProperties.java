@@ -10,15 +10,11 @@ import java.util.List;
 public class ArtemisProperties {
 
     private List<String> queues;
-    private int confirmationWindowSize = -1; // default: disabled
     private Consumer consumer = new Consumer();
 
     public List<String> getQueues() { return queues; }
     public void setQueues(List<String> queues) { this.queues = queues; }
-
-    public int getConfirmationWindowSize() { return confirmationWindowSize; }
-    public void setConfirmationWindowSize(int confirmationWindowSize) { this.confirmationWindowSize = confirmationWindowSize; }
-
+    
     public Consumer getConsumer() { return consumer; }
     public void setConsumer(Consumer consumer) { this.consumer = consumer; }
 
