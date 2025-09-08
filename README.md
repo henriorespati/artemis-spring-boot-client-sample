@@ -74,37 +74,6 @@ spring:
       max-connections: 1                   # default 1
       max-sessions-per-connection: 500     # default 500
 
-### Optional parameters for Spring Boot JMS auto configuration ###
-      block-if-full: true                  # default true
-      block-if-full-timeout: -1ms          # default -1 (indefinite wait)
-      idle-timeout: 30s                    # default 30s      
-      time-between-expiration-check: -1ms  # default -1 (disabled)
-      use-anonymous-producers: true        # default true
-
-  jms:
-    # Caching / session settings
-    cache:
-      enabled: true                        # default true
-      session-cache-size: 1                # default 1 (how many sessions cached per connection)
-
-    # JMS Listener container settings
-    listener:
-      acknowledge-mode: auto               # options: auto, client, dups_ok
-      auto-startup: true
-      # concurrency: "1-1"                 # optionally set concurrency
-      receive-timeout: 1000                # ms
-
-    template:
-      default-destination:
-      delivery-mode: persistent
-      priority: 4
-      qos-enabled: false                   # set true to enable deliveryMode/priority/ttl
-      receive-timeout: 1000
-      time-to-live: 0
-
-    pub-sub-domain: false                  # false=Queues, true=Topics
-### End of optional parameters ###
-
 app:
   artemis:
     queues:
