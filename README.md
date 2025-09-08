@@ -64,18 +64,20 @@ server:
 spring:
   artemis:
     # Artemis broker connection
-    broker-url: (tcp://localhost:61616,tcp://localhost:61716)?useTopologyForLoadBalancing=true
+    broker-url: (tcp://localhost:61616,tcp://localhost:61716)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit
     user: admin
     password: password
-    mode: native                           # default: "embedded" (switches to "native" if broker-url is set)
+    mode: native                           # default: "embedded" (switch to "native" if broker-url is set)
 
     pool:
       enabled: true                        # default false (pooling disabled by default)
-      block-if-full: true                  # default true
-      block-if-full-timeout: -1ms          # default -1 (indefinite wait)
-      idle-timeout: 30s                    # default 30s
       max-connections: 1                   # default 1
       max-sessions-per-connection: 500     # default 500
+
+### Optional parameters for Spring Boot JMS auto configuration ###
+      block-if-full: true                  # default true
+      block-if-full-timeout: -1ms          # default -1 (indefinite wait)
+      idle-timeout: 30s                    # default 30s      
       time-between-expiration-check: -1ms  # default -1 (disabled)
       use-anonymous-producers: true        # default true
 
@@ -101,6 +103,7 @@ spring:
       time-to-live: 0
 
     pub-sub-domain: false                  # false=Queues, true=Topics
+### End of optional parameters ###
 
 app:
   artemis:
@@ -109,7 +112,7 @@ app:
       - exampleQueue2
     confirmation-window-size: 1048576      # required for async sends (default -1 = disabled)
     consumer:
-      mode: TX
+      mode: TX                             # SYNC, ASYNC, REPLY, TX
       threads-per-queue: 2
 
 logging:
