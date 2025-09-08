@@ -3,18 +3,15 @@ package com.example.artemis.jms.pool;
 import jakarta.jms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.List;
 
 public class ProducerPool {
 
     private static final Logger logger = LoggerFactory.getLogger(ProducerPool.class);
 
     private final ConnectionFactory connectionFactory;
-    private final List<String> queues;
 
-    public ProducerPool(ConnectionFactory connectionFactory, List<String> queues) {
+    public ProducerPool(ConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
-        this.queues = queues;
     }
 
     public void sendAsync(String queueName, String message) {

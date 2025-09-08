@@ -46,8 +46,8 @@ public class ArtemisJmsConfig {
 
     @Bean
     public ProducerPool producerPool(ConnectionFactory connectionFactory) {
-        logger.info("Creating ProducerPool for queues {}", appProps.getQueues());
-        return new ProducerPool(connectionFactory, appProps.getQueues());
+        logger.info("Creating ProducerPool");
+        return new ProducerPool(connectionFactory);
     }
 
 }
