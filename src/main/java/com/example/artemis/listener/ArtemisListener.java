@@ -10,7 +10,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
+// import org.springframework.retry.annotation.Retryable;
+// import org.springframework.retry.support.RetrySynchronizationManager;
+// import org.springframework.retry.RetryContext;
+// import org.springframework.retry.annotation.Backoff;
+// import org.springframework.retry.annotation.Recover;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.Destination;
@@ -44,11 +50,35 @@ public class ArtemisListener {
     }
 
     /** Transactional consumption */
+    // @Retryable(
+    //         value = RuntimeException.class, // retry on RuntimeException
+    //         maxAttempts = 2, // max attempts
+    //         backoff = @Backoff(delay = 1000)) // delay between retries in ms 
     @JmsListener(destination = "${app.queue.transaction}", containerFactory = "transactedJmsListenerContainerFactory")
+    @Transactional
     public void receiveTransaction(TextMessage message) throws Exception {
         try {
             String text = message.getText();
             logger.info("Received transactional message: {}", text);
+
+            // RetryContext context = RetrySynchronizationManager.getContext();
+            // int retryCount = (context != null) ? context.getRetryCount() : 0;
+            // logger.info("Processing transactional message: {} (retry count: {})", text, retryCount);
+
+            long startTime = message.getJMSTimestamp();
+            logger.info("Message JMS Timestamp: {}", startTime);
+            long elapsed = System.currentTimeMillis() - startTime;
+            logger.info("Elapsed time since message sent: {} ms", elapsed);
+
+            int deliveryCount = message.getIntProperty("JMSXDeliveryCount");
+            // Simulate failure for messages containing "fail" to trigger rollback
+            if (text.contains("fail") && elapsed < 1000) { 
+                logger.warn("Simulating rollback for message: {}, delivery count: {}", text, deliveryCount);
+                throw new RuntimeException("Simulated processing failure");
+            }
+
+            message.acknowledge(); // acknowledge message processing
+            logger.info("Processed transactional message successfully: {}, delivery count: {}", text, deliveryCount);
         } catch (Exception e) {
             logger.error("Transaction rolled back for message: {}", message.getText(), e);
             throw e; // ensures Spring rolls back the session

@@ -1,6 +1,8 @@
 package com.example.artemis.config;
 
 import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Session;
+
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -45,6 +47,7 @@ public class ArtemisJmsConfig {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setSessionTransacted(true); // enable transaction
+        factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // client ack mode for transaction
         factory.setConcurrency("1-1");
         return factory;
     }

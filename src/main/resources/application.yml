@@ -2,7 +2,8 @@ spring:
   artemis:
     user: admin
     password: password
-    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&confirmationWindowSize=1048576&blockOnDurableSend=false&consumerWindowSize=65536&reconnectAttempts=10&retryInterval=2000&retryIntervalMultiplier=1.5&maxRetryInterval=15000
+    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&confirmationWindowSize=1048576
+    ## &blockOnDurableSend=false&consumerWindowSize=65536&reconnectAttempts=10&retryInterval=2000&retryIntervalMultiplier=1.5&maxRetryInterval=15000
 
 app:
   queue:
@@ -14,4 +15,5 @@ app:
 logging:
   level:
     root: info
+    org.apache.activemq.artemis.jms.client: debug
     com.example.artemis: debug
