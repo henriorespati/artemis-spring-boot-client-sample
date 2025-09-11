@@ -1,8 +1,11 @@
 package com.example.artemis.config;
 
 import jakarta.jms.ConnectionFactory;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.springframework.beans.factory.annotation.Value;
+
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
@@ -12,23 +15,20 @@ import org.springframework.jms.support.converter.SimpleMessageConverter;
 @Configuration
 public class ArtemisJmsConfig {
 
-    @Value("${spring.artemis.user}")
-    private String artemisUser;
-
-    @Value("${spring.artemis.password}")
-    private String artemisPassword;
-
-    @Value("${spring.artemis.broker-url}")
-    private String brokerUrl;
+    private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
 
     @Bean
-    public ActiveMQConnectionFactory activeMQConnectionFactory() {
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
-        factory.setUser(artemisUser);
-        factory.setPassword(artemisPassword);
-        return factory;
+    CommandLineRunner check(ConnectionFactory cf) {
+        return args -> {
+            logger.info("JMS ConnectionFactory in use: {}", cf.getClass());
+            if (cf instanceof JmsPoolConnectionFactory pool) {
+                logger.info("Pool enabled, number of connections: {}, max connections: {}", 
+                    pool.getNumConnections() , pool.getMaxConnections());
+            }
+        };
     }
 
+    // Non-transactional listener factory
     @Bean
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
@@ -49,6 +49,7 @@ public class ArtemisJmsConfig {
         return factory;
     }
 
+    // Non-transactional JmsTemplate
     @Bean
     public JmsTemplate jmsTemplate(ConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
@@ -57,11 +58,12 @@ public class ArtemisJmsConfig {
         return template;
     }
 
+    // Transactional JmsTemplate
     @Bean
     public JmsTemplate transactionalJmsTemplate(ConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
         template.setMessageConverter(new SimpleMessageConverter());
-        template.setSessionTransacted(true); // Transacted session
+        template.setSessionTransacted(true); // transactional session
         return template;
     }
 }

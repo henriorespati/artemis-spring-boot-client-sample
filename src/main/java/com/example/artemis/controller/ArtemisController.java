@@ -17,9 +17,6 @@ public class ArtemisController {
     private static final Logger logger = LoggerFactory.getLogger(ArtemisController.class);
     private final ProducerService producerService;
 
-    @Value("${app.queue.async}")
-    private String asyncQueueName;
-
     @Value("${app.queue.request}")
     private String requestQueueName;
 
@@ -42,16 +39,6 @@ public class ArtemisController {
             logger.error("Failed to send sync message", e);
             return ResponseEntity.status(500).body("Error sending sync message");
         }
-    }
-
-    @PostMapping("/send/async")
-    public CompletableFuture<ResponseEntity<String>> sendAsync(@RequestBody String message) {
-        return producerService.sendAsync(asyncQueueName, message)
-                .thenApply(v -> ResponseEntity.ok("ASYNC message sent successfully"))
-                .exceptionally(ex -> {
-                    logger.error("Async send failed", ex);
-                    return ResponseEntity.status(500).body("Async send failed");
-                });
     }
 
     @PostMapping("/send/request")

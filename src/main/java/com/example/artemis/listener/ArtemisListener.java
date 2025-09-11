@@ -1,46 +1,23 @@
 package com.example.artemis.listener;
 
-import jakarta.jms.JMSConsumer;
-import jakarta.jms.JMSContext;
-import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
-import jakarta.jms.ConnectionFactory;
 import jakarta.jms.Destination;
-import jakarta.jms.IllegalStateRuntimeException;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Component
 public class ArtemisListener {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisListener.class);
-
-    private final ConnectionFactory connectionFactory;
     private final JmsTemplate jmsTemplate;
-    private final List<JMSContext> contexts = new ArrayList<>();
-    private final List<Thread> syncThreads = new ArrayList<>();
-    private final int timeoutMs = 5000;
 
-    public ArtemisListener(ConnectionFactory connectionFactory, @Qualifier("jmsTemplate") JmsTemplate jmsTemplate,
-            @Value("${app.queue.sync}") String queueName) {
-        this.connectionFactory = connectionFactory;
+    public ArtemisListener(@Qualifier("jmsTemplate") JmsTemplate jmsTemplate) {
         this.jmsTemplate = jmsTemplate;
-        startSyncConsumer(queueName);
-    }
-
-    /** Asynchronous consumption */
-    @JmsListener(destination = "${app.queue.async}", containerFactory = "jmsListenerContainerFactory")
-    public void receiveAsync(TextMessage message) throws Exception {
-        logger.info("ASYNC message received: {}", message.getText());
     }
 
     /** Transactional consumption */
@@ -72,52 +49,9 @@ public class ArtemisListener {
     }
 
     /** Synchronous consumption */
-    private void startSyncConsumer(String queueName) {
-        JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE);
-        Queue queue = context.createQueue(queueName);
-        JMSConsumer consumer = context.createConsumer(queue);
-
-        Thread t = new Thread(() -> {
-            try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    var msg = consumer.receive(timeoutMs);
-
-                    if (msg != null) {
-                        if (msg instanceof TextMessage tm) {
-                            logger.info("SYNC message received: {}", tm.getText());
-                        } else {
-                            logger.warn("SYNC received non-text message: {}", msg);
-                        }
-                    }
-                }
-            } catch (IllegalStateRuntimeException e) {
-                logger.info("Consumer on {} closed, exiting loop", queueName);
-            } catch (Exception e) {
-                logger.error("Error in sync consumer", e);
-            } finally {
-                try { consumer.close(); } catch (Exception ignored) {}
-                try { context.close(); } catch (Exception ignored) {}
-                stop();
-            }
-        }, "SyncConsumer-" + queueName);
-
-        t.start();
-        contexts.add(context);
-        syncThreads.add(t);
-        logger.info("Started SYNC consumer thread for queue {}", queueName);
+    @JmsListener(destination = "${app.queue.sync}", containerFactory = "jmsListenerContainerFactory")
+    public void receiveSync(TextMessage message) throws Exception {
+        logger.info("SYNC message received: {}", message.getText());
     }
-
-    /** Stop all sync consumers */
-    public void stop() {
-        syncThreads.forEach(Thread::interrupt);
-        syncThreads.clear();
-        contexts.forEach(ctx -> {
-            try {
-                ctx.close();
-            } catch (Exception ignored) {
-            }
-        });
-        contexts.clear();
-        logger.info("Stopped all consumers");
-    }
+    
 }
