@@ -3,8 +3,11 @@ package com.example.artemis.config;
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.Session;
 
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
@@ -23,12 +26,17 @@ public class ArtemisJmsConfig {
     @Value("${spring.artemis.broker-url}")
     private String brokerUrl;
 
+    private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
+
     @Bean
-    public ActiveMQConnectionFactory activeMQConnectionFactory() {
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
-        factory.setUser(artemisUser);
-        factory.setPassword(artemisPassword);
-        return factory;
+    CommandLineRunner check(ConnectionFactory cf) {
+        return args -> {
+            logger.info("JMS ConnectionFactory in use: {}", cf.getClass());
+            if (cf instanceof JmsPoolConnectionFactory pool) {
+                logger.info("Pool enabled, number of connections: {}, max connections: {}", 
+                    pool.getNumConnections() , pool.getMaxConnections());
+            }
+        };
     }
 
     @Bean

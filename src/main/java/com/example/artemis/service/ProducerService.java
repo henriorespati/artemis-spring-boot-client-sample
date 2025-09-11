@@ -1,6 +1,7 @@
 package com.example.artemis.service;
 
 import jakarta.jms.CompletionListener;
+import jakarta.jms.ConnectionFactory;
 import jakarta.jms.JMSContext;
 import jakarta.jms.JMSException;
 import jakarta.jms.JMSProducer;
@@ -10,7 +11,6 @@ import jakarta.jms.MessageProducer;
 import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
 
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,12 +26,12 @@ public class ProducerService {
     private static final Logger logger = LoggerFactory.getLogger(ProducerService.class);
     private final JmsTemplate jmsTemplate;
     private final JmsTemplate transactionalJmsTemplate;
-    private final ActiveMQConnectionFactory connectionFactory;
+    private final ConnectionFactory connectionFactory;
     private final int timeoutMs = 5000;
 
     public ProducerService(@Qualifier("jmsTemplate") JmsTemplate jmsTemplate,
             @Qualifier("transactionalJmsTemplate") JmsTemplate transactionalJmsTemplate,
-            ActiveMQConnectionFactory connectionFactory) {
+            ConnectionFactory connectionFactory) {
         this.jmsTemplate = jmsTemplate;
         this.transactionalJmsTemplate = transactionalJmsTemplate;
         this.connectionFactory = connectionFactory;

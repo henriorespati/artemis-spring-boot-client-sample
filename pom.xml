@@ -70,6 +70,13 @@
             <version>${artemis.version}</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.messaginghub/pooled-jms -->
+        <dependency>
+            <groupId>org.messaginghub</groupId>
+            <artifactId>pooled-jms</artifactId>
+            <version>3.1.7</version>
+        </dependency>
+
         <!-- Spring Boot Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
