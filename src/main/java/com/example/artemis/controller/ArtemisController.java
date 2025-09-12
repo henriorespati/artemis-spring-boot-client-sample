@@ -1,6 +1,7 @@
 package com.example.artemis.controller;
 
 import com.example.artemis.service.ProducerService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/artemis")
@@ -39,6 +39,18 @@ public class ArtemisController {
             logger.error("Failed to send sync message", e);
             return ResponseEntity.status(500).body("Error sending sync message");
         }
+    }
+
+    @PostMapping("/send/sync/{max}")
+    public String sendSync(@RequestBody String message, @PathVariable(name = "max") int max) {
+        for (int i = 0; i < max; i++) {
+            try {
+                producerService.send(syncQueueName, message + " - " + (i + 1));
+            } catch (Exception e) {
+                logger.error("Failed to send sync message", e);
+            }
+        }
+        return "SYNC message sent";
     }
 
     @PostMapping("/send/request")

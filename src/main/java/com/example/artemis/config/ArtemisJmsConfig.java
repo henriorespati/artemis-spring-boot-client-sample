@@ -1,6 +1,7 @@
 package com.example.artemis.config;
 
 import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Session;
 
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
@@ -11,8 +12,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.SimpleMessageConverter;
+import org.springframework.retry.annotation.EnableRetry;
 
 @Configuration
+@EnableRetry
 public class ArtemisJmsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
@@ -23,7 +26,7 @@ public class ArtemisJmsConfig {
             logger.info("JMS ConnectionFactory in use: {}", cf.getClass());
             if (cf instanceof JmsPoolConnectionFactory pool) {
                 logger.info("Pool enabled, number of connections: {}, max connections: {}", 
-                    pool.getNumConnections() , pool.getMaxConnections());
+                    pool.getNumConnections() , pool.getMaxConnections()); 
             }
         };
     }
@@ -33,8 +36,9 @@ public class ArtemisJmsConfig {
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setConcurrency("5-10"); // allow 5-10 concurrent consumers
+        factory.setConcurrency("1-1"); 
         factory.setSessionTransacted(false); // non-transactional session
+        factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE);
         return factory;
     }
 

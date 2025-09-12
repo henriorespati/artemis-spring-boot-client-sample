@@ -51,7 +51,24 @@ public class ArtemisListener {
     /** Synchronous consumption */
     @JmsListener(destination = "${app.queue.sync}", containerFactory = "jmsListenerContainerFactory")
     public void receiveSync(TextMessage message) throws Exception {
-        logger.info("SYNC message received: {}", message.getText());
+        logger.info("SYNC message received: {}", message.getText()); 
+        // try {
+        //     String text = message.getText();
+        //     int deliveryCount = message.getIntProperty("JMSXDeliveryCount");
+
+        //    logger.info("SYNC message received: {}, Redelivered: {}, Delivery Count: {}", text, message.getJMSRedelivered(), deliveryCount);
+
+        //     if (deliveryCount < 3) {
+        //         throw new RuntimeException("Simulated processing failure");
+        //     }
+        //     
+        //     message.acknowledge();
+        //     logger.info("Message acknowledged: {}", text);
+        // } catch (Exception e) {
+        //     logger.error("Processing failed for message: {}", message.getText(), e);
+        //     throw new RuntimeException("Simulated processing failure");
+        // }
+        
     }
     
 }

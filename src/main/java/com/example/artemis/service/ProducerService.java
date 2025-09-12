@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +24,8 @@ public class ProducerService {
     private final JmsTemplate transactionalJmsTemplate;
     private final int timeoutMs = 5000;
 
+    // private int retry = 0;
+
     public ProducerService(@Qualifier("jmsTemplate") JmsTemplate jmsTemplate,
             @Qualifier("transactionalJmsTemplate") JmsTemplate transactionalJmsTemplate) {
         this.jmsTemplate = jmsTemplate;
@@ -29,12 +33,23 @@ public class ProducerService {
     }
 
     /** Synchronous send */
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
     public void send(String queueName, String message) {
+        // if (Math.random() < 0.5) {
+        //     retry++;
+        //     logger.warn("Exception occurred, will retry: attempt: {}", retry);
+        //     if(retry >= 2) retry = 0; // reset retry counter after max attempts
+        //     // Simulate transient error
+        //     throw new RuntimeException("Simulated transient error");
+        // }
+        // retry = 0; // reset retry counter on success
+
         jmsTemplate.convertAndSend(queueName, message);
         logger.info("SYNC message sent: {}", message);
     }
 
     /** Transactional send */
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
     public void sendTransaction(String queueName, List<String> messages) {
         transactionalJmsTemplate.execute(session -> {
             var producer = session.createProducer(session.createQueue(queueName));
@@ -50,6 +65,7 @@ public class ProducerService {
     }
 
     /** Request/Reply send */
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
     public String sendRequest(String requestQueueName, String message) {
         return jmsTemplate.execute(session -> {
             MessageProducer producer = session.createProducer(session.createQueue(requestQueueName));
