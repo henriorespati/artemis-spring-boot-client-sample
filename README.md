@@ -6,7 +6,7 @@ This project demonstrates a Spring Boot client for **Apache ActiveMQ Artemis** u
 
 ## Features
 
-- **Synchronous consumption** of messages
+- **Synchronous production / consumption** of messages
 - **Request/Reply pattern** with temporary reply queues
 - **Transactional send** using JMS transactions
 - **Configurable via `application.yml`**
