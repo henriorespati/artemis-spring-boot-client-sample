@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 import jakarta.jms.Destination;
@@ -20,8 +22,30 @@ public class ArtemisListener {
         this.jmsTemplate = jmsTemplate;
     }
 
+    /** Synchronous consumption */
+    @JmsListener(destination = "${app.queue.sync}")
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
+    public void receiveSync(TextMessage message) throws Exception {
+        logger.info("SYNC message received: {}", message.getText()); 
+    }
+
     /** Transactional consumption */
-    @JmsListener(destination = "${app.queue.transaction}", containerFactory = "transactedJmsListenerContainerFactory")
+    @JmsListener(destination = "${app.queue.transaction}")
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
     public void receiveTransaction(TextMessage message) throws Exception {
         try {
             String text = message.getText();
@@ -33,7 +57,15 @@ public class ArtemisListener {
     }
 
     /** Request-Reply consumption */
-    @JmsListener(destination = "${app.queue.request}", containerFactory = "jmsListenerContainerFactory")
+    @JmsListener(destination = "${app.queue.request}")
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
     public void receiveAndReply(TextMessage message) throws Exception {
         String text = message.getText();
         logger.info("Received request: {}", text);
@@ -46,29 +78,6 @@ public class ArtemisListener {
         } else {
             logger.warn("No JMSReplyTo set, cannot send reply for message: {}", text);
         }
-    }
-
-    /** Synchronous consumption */
-    @JmsListener(destination = "${app.queue.sync}", containerFactory = "jmsListenerContainerFactory")
-    public void receiveSync(TextMessage message) throws Exception {
-        logger.info("SYNC message received: {}", message.getText()); 
-        // try {
-        //     String text = message.getText();
-        //     int deliveryCount = message.getIntProperty("JMSXDeliveryCount");
-
-        //    logger.info("SYNC message received: {}, Redelivered: {}, Delivery Count: {}", text, message.getJMSRedelivered(), deliveryCount);
-
-        //     if (deliveryCount < 3) {
-        //         throw new RuntimeException("Simulated processing failure");
-        //     }
-        //     
-        //     message.acknowledge();
-        //     logger.info("Message acknowledged: {}", text);
-        // } catch (Exception e) {
-        //     logger.error("Processing failed for message: {}", message.getText(), e);
-        //     throw new RuntimeException("Simulated processing failure");
-        // }
-        
     }
     
 }

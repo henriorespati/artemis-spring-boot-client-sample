@@ -21,37 +21,39 @@ public class ProducerService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProducerService.class);
     private final JmsTemplate jmsTemplate;
-    private final JmsTemplate transactionalJmsTemplate;
     private final int timeoutMs = 5000;
 
     // private int retry = 0;
 
-    public ProducerService(@Qualifier("jmsTemplate") JmsTemplate jmsTemplate,
-            @Qualifier("transactionalJmsTemplate") JmsTemplate transactionalJmsTemplate) {
+    public ProducerService(@Qualifier("jmsTemplate") JmsTemplate jmsTemplate) {
         this.jmsTemplate = jmsTemplate;
-        this.transactionalJmsTemplate = transactionalJmsTemplate;
     }
 
     /** Synchronous send */
-    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
     public void send(String queueName, String message) {
-        // if (Math.random() < 0.5) {
-        //     retry++;
-        //     logger.warn("Exception occurred, will retry: attempt: {}", retry);
-        //     if(retry >= 2) retry = 0; // reset retry counter after max attempts
-        //     // Simulate transient error
-        //     throw new RuntimeException("Simulated transient error");
-        // }
-        // retry = 0; // reset retry counter on success
-
         jmsTemplate.convertAndSend(queueName, message);
         logger.info("SYNC message sent: {}", message);
     }
 
     /** Transactional send */
-    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
     public void sendTransaction(String queueName, List<String> messages) {
-        transactionalJmsTemplate.execute(session -> {
+        jmsTemplate.execute(session -> {
             var producer = session.createProducer(session.createQueue(queueName));
             for (String msg : messages) {
                 producer.send(session.createTextMessage(msg));
@@ -65,7 +67,14 @@ public class ProducerService {
     }
 
     /** Request/Reply send */
-    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
     public String sendRequest(String requestQueueName, String message) {
         return jmsTemplate.execute(session -> {
             MessageProducer producer = session.createProducer(session.createQueue(requestQueueName));
