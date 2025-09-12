@@ -41,18 +41,6 @@ public class ArtemisController {
         }
     }
 
-    @PostMapping("/send/sync/{max}")
-    public String sendSync(@RequestBody String message, @PathVariable(name = "max") int max) {
-        for (int i = 0; i < max; i++) {
-            try {
-                producerService.send(syncQueueName, message + " - " + (i + 1));
-            } catch (Exception e) {
-                logger.error("Failed to send sync message", e);
-            }
-        }
-        return "SYNC message sent";
-    }
-
     @PostMapping("/send/request")
     public String sendRequest(@RequestBody String message) {
         String reply = producerService.sendRequest(requestQueueName, message);
