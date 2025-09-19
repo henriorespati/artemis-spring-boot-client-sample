@@ -184,7 +184,7 @@ public class DynamicJmsConfiguration implements BeanDefinitionRegistryPostProces
                     ArtemisListener artemisListener = beanFactory.getBean(ArtemisListener.class);
                     if (message instanceof TextMessage textMessage) {
                         try {
-                            artemisListener.receiveSync(textMessage);
+                            // artemisListener.receiveSync(textMessage);
                         } catch (Exception e) {
                             logger.error("Error processing message from {}: {}", brokerId, e.getMessage(), e);
                             throw new RuntimeException(e); // trigger retry

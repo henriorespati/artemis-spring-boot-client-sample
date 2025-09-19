@@ -10,7 +10,7 @@ import jakarta.jms.MessageProducer;
 import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
 
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jms.JmsException;
@@ -29,14 +29,14 @@ public class ProducerService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProducerService.class);
 
-    private final ActiveMQConnectionFactory connectionFactory;
+    private final JmsPoolConnectionFactory connectionFactory;
     private final JmsTemplate jmsTemplate;
     // private final List<JmsTemplate> jmsTemplates; // all broker templates
 
     public ProducerService(
         JmsTemplate jmsTemplate
         // Map<String, JmsTemplate> jmsTemplates
-        , ActiveMQConnectionFactory connectionFactory
+        , JmsPoolConnectionFactory connectionFactory
     ) {
         this.jmsTemplate = jmsTemplate;
         // this.jmsTemplates = List.copyOf(jmsTemplates.values());

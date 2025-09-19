@@ -3,7 +3,8 @@ package com.example.artemis.listener;
 import jakarta.jms.TextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.retry.annotation.Backoff;
@@ -11,32 +12,44 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 import jakarta.jms.Destination;
+import jakarta.jms.Message;
 
 @Component
-public class ArtemisListener {
+public class ArtemisListener 
+    implements CommandLineRunner 
+{
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisListener.class);
     private final JmsTemplate jmsTemplate;
 
+    @Value("${app.queue.sync}")
+    private String syncQueue;
+
     public ArtemisListener(
-        // @Qualifier("jmsTemplate") 
         JmsTemplate jmsTemplate
         ) {
         this.jmsTemplate = jmsTemplate;
     }
 
     /** Synchronous consumption */
-    @JmsListener(destination = "${app.queue.sync}")
-    @Retryable(
-        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
-        backoff = @Backoff(
-            delayExpression = "${spring.retry.delay:1000}", 
-            multiplierExpression = "${spring.retry.multiplier:1.0}", 
-            maxDelayExpression = "${spring.retry.max-delay:10000}"
-        )
-    )
-    public void receiveSync(TextMessage message) throws Exception {
-        logger.info("SYNC message received: {}", message.getText()); 
+    public void receiveSync() throws Exception {
+        Message message = jmsTemplate.receive(syncQueue);
+        if (message instanceof TextMessage textMessage) {
+            logger.info("SYNC message received: {}", textMessage.getText());
+        } 
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        logger.info("Listening for SYNC messages on queue: {}", syncQueue);
+        while (true) {
+            try {
+                receiveSync();
+            } catch (Exception e) {
+                logger.error("Error receiving SYNC message: {}", e.getMessage());
+            }
+            // Thread.sleep(1000); // Poll every second
+        }
     }
 
     /** Asynchronous consumption */

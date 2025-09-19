@@ -12,7 +12,7 @@ spring:
     pool:
       enabled: true                     # enable JmsPoolConnectionFactory
       max-connections: 2                # max physical connections
-      max-sessions-per-connection: 2    # max sessions per connection
+      max-sessions-per-connection: 20   # max sessions per connection
       idle-timeout: 30000               # ms before idle connections are closed
       block-if-full: true               # block when max connections reached
       block-if-full-timeout: 5000       # ms to wait for a connection, -1 = forever
@@ -27,6 +27,7 @@ spring:
         transacted: false           # true = transacted session
 
     template:
+      receive-timeout: 1000         # timeout for receive() in ms
       session:
         acknowledge-mode: auto      # auto, client, dups-ok
         transacted: false           # true = transactional send

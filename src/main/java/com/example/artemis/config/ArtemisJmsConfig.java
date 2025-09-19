@@ -30,69 +30,145 @@ public class ArtemisJmsConfig {
 
     @Value("${spring.artemis.broker-url}")
     private String brokerUrl;
-    
+
+    @Value("${spring.artemis.pool.max-connections}")
+    private int poolMaxConnections;
+
+    @Value("${spring.artemis.pool.max-sessions-per-connection}")
+    private int poolMaxSessionsPerConnection;
+
     @Value("${spring.jms.listener.session.transacted}")
     private boolean listenerTransacted;
+
+    @Value("${spring.jms.template.receive-timeout}")
+    private int templateReceiveTimeout;
 
     @Value("${spring.jms.template.session.transacted}")
     private boolean templateTransacted;
 
     @Bean
     CommandLineRunner check(
-            ConnectionFactory cf,
+            JmsPoolConnectionFactory pool,
             JmsTemplate jmsTemplate,
             DefaultJmsListenerContainerFactory jmsListenerContainerFactory
     ) {
         return args -> {
             logger.info("---- JMS CONFIGURATION CHECK ----");
 
-            // ConnectionFactory 
-            logger.info("ConnectionFactory type: {}", cf.getClass().getName());
-            if (cf instanceof JmsPoolConnectionFactory pool) {
-                logger.info("Pool enabled: maxConnections={}, idleTimeout(ms)={}, blockIfFull={}, blockIfFullTimeout(ms)={}",
-                        pool.getMaxConnections(),
-                        pool.getConnectionIdleTimeout(),
-                        pool.isBlockIfSessionPoolIsFull(),
-                        pool.getBlockIfSessionPoolIsFullTimeout()
-                );
-                logger.info("NumConnections in use: {}", pool.getNumConnections());
-
-                if (pool.getConnectionFactory() instanceof org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory amq) {
-                    var locator = amq.getServerLocator();
-                    logger.info("ActiveMQ Artemis connection settings:");
-                    logger.info("  reconnectAttempts={} retryInterval={} retryIntervalMultiplier={} maxRetryInterval={}",
-                            locator.getReconnectAttempts(),
-                            locator.getRetryInterval(),
-                            locator.getRetryIntervalMultiplier(),
-                            locator.getMaxRetryInterval()
-                    );
-                    logger.info("  confirmationWindowSize={} consumerWindowSize={}",
-                            locator.getConfirmationWindowSize(),
-                            locator.getConsumerWindowSize()
-                    );
-                    logger.info("  blockOnDurableSend={} blockOnAcknowledge={}",
-                            locator.isBlockOnDurableSend(),
-                            locator.isBlockOnAcknowledge()
-                    );
-                }
+            // Force a connection to initialize the pool + delegate
+            try {
+                jmsTemplate.execute(session -> {
+                    logger.info("Forcing connection creation for diagnostics...");
+                    return null;
+                });
+            } catch (Exception e) {
+                logger.warn("Dummy connection attempt failed: {}", e.getMessage());
             }
 
+            // ConnectionFactory
+            logger.info("ConnectionFactory type: {}", pool.getClass().getName());
+
+            // --- Pooled ConnectionFactory settings ---
+            logger.info("JmsPoolConnectionFactory settings:");
+            logger.info("  maxConnections={} maxSessionsPerConnection={} blockIfFull={} blockIfFullTimeout(ms)={}",
+                    pool.getMaxConnections(),
+                    pool.getMaxSessionsPerConnection(),
+                    pool.isBlockIfSessionPoolIsFull(),
+                    pool.getBlockIfSessionPoolIsFullTimeout()
+            );
+            logger.info("  connectionIdleTimeout(ms)={} connectionCheckInterval(ms)={} useProviderJMSContext={}",
+                    pool.getConnectionIdleTimeout(),
+                    pool.getConnectionCheckInterval(),
+                    pool.isUseProviderJMSContext()
+            );
+            logger.info("  numConnectionsInUse={}", pool.getNumConnections());
+
+            // Delegate factory
+            var delegate = pool.getConnectionFactory();
+            logger.info("Delegate factory type: {}", delegate.getClass().getName());
+
+            if (delegate instanceof ActiveMQConnectionFactory amq) {
+                var locator = amq.getServerLocator();
+
+                // --- Artemis ServerLocator settings ---
+                logger.info("Artemis ServerLocator settings:");
+                logger.info("  reconnectAttempts={} retryInterval={} retryIntervalMultiplier={} maxRetryInterval={}",
+                        locator.getReconnectAttempts(),
+                        locator.getRetryInterval(),
+                        locator.getRetryIntervalMultiplier(),
+                        locator.getMaxRetryInterval()
+                );
+                logger.info("  confirmationWindowSize={} consumerWindowSize={}",
+                        locator.getConfirmationWindowSize(),
+                        locator.getConsumerWindowSize()
+                );
+                logger.info("  blockOnDurableSend={} blockOnNonDurableSend={} blockOnAcknowledge={}",
+                        locator.isBlockOnDurableSend(),
+                        locator.isBlockOnNonDurableSend(),
+                        locator.isBlockOnAcknowledge()
+                );
+                logger.info("  ackBatchSize={}",
+                        locator.getAckBatchSize()
+                );
+                logger.info("  producerMaxRate={} consumerMaxRate={}",
+                        locator.getProducerMaxRate(),
+                        locator.getConsumerMaxRate()
+                );
+                logger.info("  callTimeout(ms)={} callFailoverTimeout(ms)={} clientFailureCheckPeriod(ms)={}",
+                        locator.getCallTimeout(),
+                        locator.getCallFailoverTimeout(),
+                        locator.getClientFailureCheckPeriod()
+                );
+                logger.info("  connectionTTL(ms)={} connectionLoadBalancingPolicyClassName={}",
+                        locator.getConnectionTTL(),
+                        locator.getConnectionLoadBalancingPolicyClassName()
+                );
+                logger.info("  minLargeMessageSize={}",
+                        locator.getMinLargeMessageSize()
+                );
+                logger.info("  useGlobalPools={} scheduledThreadPoolMaxSize={} threadPoolMaxSize={}",
+                        locator.isUseGlobalPools(),
+                        locator.getScheduledThreadPoolMaxSize(),
+                        locator.getThreadPoolMaxSize()
+                );
+                logger.info("  autoGroup={} preAcknowledge={} cacheLargeMessagesClient={}",
+                        locator.isAutoGroup(),
+                        locator.isPreAcknowledge(),
+                        locator.isCacheLargeMessagesClient()
+                );
+                logger.info("  initialConnectAttempts={} reconnectAttempts={} retryInterval={} retryIntervalMultiplier={} maxRetryInterval={}",
+                        locator.getInitialConnectAttempts(),
+                        locator.getReconnectAttempts(),
+                        locator.getRetryInterval(),
+                        locator.getRetryIntervalMultiplier(),
+                        locator.getMaxRetryInterval()
+                );
+            }            
+
             // JmsTemplate
-            logger.info("JmsTemplate: sessionTransacted={}, acknowledgeMode={}",
+            logger.info("JmsTemplate settings:");
+            logger.info("  sessionTransacted={} acknowledgeMode={} receiveTimeout(ms)={}",
                     jmsTemplate.isSessionTransacted(),
-                    jmsTemplate.getSessionAcknowledgeMode()
+                    jmsTemplate.getSessionAcknowledgeMode(),
+                    jmsTemplate.getReceiveTimeout()
             );
 
             logger.info("---- END JMS CONFIGURATION CHECK ----");
         };
     }
 
+
     @Bean
-    public ActiveMQConnectionFactory activeMQConnectionFactory() {
+    public JmsPoolConnectionFactory pooledConnectionFactory() {
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
         factory.setUser(artemisUser);
         factory.setPassword(artemisPassword);
-        return factory;
+
+        JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
+        pool.setConnectionFactory(factory);
+        pool.setMaxConnections(poolMaxConnections);
+        pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
+        return pool;
     }
 
     @Bean
@@ -100,13 +176,13 @@ public class ArtemisJmsConfig {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setSessionTransacted(listenerTransacted);
-        logger.info("connectionFactoryClass={}",connectionFactory.getClass().getName());
         return factory;
     }
 
     @Bean
     public JmsTemplate jmsTemplate(ConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
+        template.setReceiveTimeout(templateReceiveTimeout);
         template.setSessionTransacted(templateTransacted);
         return template;
     }
