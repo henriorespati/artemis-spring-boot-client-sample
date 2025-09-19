@@ -1,12 +1,18 @@
 spring:
+  profiles:
+    active: single-broker # single-broker, multi-brokers
+
   artemis:
     user: admin
     password: password
-    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&confirmationWindowSize=1048576&consumerWindowSize=65536&blockOnDurableSend=false&blockOnAcknowledge=false&connectionTtl=60000&reconnectAttempts=5&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000
+    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?useTopologyForLoadBalancing=true&sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false
+    ##&reconnectAttempts=5&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000&consumerWindowSize=-1&producerWindowSize=-1
+    ##&confirmationWindowSize=1048576&blockOnDurableSend=false&blockOnAcknowledge=false&connectionTtl=60000
+    
     pool:
       enabled: true                     # enable JmsPoolConnectionFactory
-      max-connections: 10               # max physical connections
-      max-sessions-per-connection: 5    # max sessions per connection
+      max-connections: 2                # max physical connections
+      max-sessions-per-connection: 2    # max sessions per connection
       idle-timeout: 30000               # ms before idle connections are closed
       block-if-full: true               # block when max connections reached
       block-if-full-timeout: 5000       # ms to wait for a connection, -1 = forever
@@ -14,8 +20,8 @@ spring:
   # Listener/template parameters
   jms:
     listener:
-      min-concurrency: 1            # min concurrent consumers
-      max-concurrency: 10           # max concurrent consumers
+      min-concurrency: 2            # min concurrent consumers
+      max-concurrency: 2            # max concurrent consumers
       session:
         acknowledge-mode: auto      # auto, client, dups-ok
         transacted: false           # true = transacted session
@@ -34,6 +40,7 @@ spring:
 
 app:
   queue:
+    async: asyncQueue
     request: requestQueue
     sync: syncQueue
     transaction: transactionQueue
@@ -42,5 +49,9 @@ logging:
   level:
     root: info
     com.example.artemis: debug
-    org.apache.activemq.artemis.jms.client: debug
+    # org.apache.activemq.artemis: debug
+    # org.apache.activemq.artemis.core.client: debug
+    # org.apache.activemq.artemis.api.core.client: debug
+    # org.springframework.jms.listener: debug
+    # org.apache.activemq.artemis.jms.client: debug
     org.messaginghub.pooled.jms: debug

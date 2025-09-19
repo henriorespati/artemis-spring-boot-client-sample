@@ -18,7 +18,10 @@ public class ArtemisListener {
     private static final Logger logger = LoggerFactory.getLogger(ArtemisListener.class);
     private final JmsTemplate jmsTemplate;
 
-    public ArtemisListener(@Qualifier("jmsTemplate") JmsTemplate jmsTemplate) {
+    public ArtemisListener(
+        // @Qualifier("jmsTemplate") 
+        JmsTemplate jmsTemplate
+        ) {
         this.jmsTemplate = jmsTemplate;
     }
 
@@ -34,6 +37,20 @@ public class ArtemisListener {
     )
     public void receiveSync(TextMessage message) throws Exception {
         logger.info("SYNC message received: {}", message.getText()); 
+    }
+
+    /** Asynchronous consumption */
+    @JmsListener(destination = "${app.queue.async}")
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
+    public void receiveAsync(TextMessage message) throws Exception {
+        logger.info("ASYNC message received: {}", message.getText()); 
     }
 
     /** Transactional consumption */

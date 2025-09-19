@@ -1,33 +1,54 @@
 package com.example.artemis.service;
 
+import jakarta.jms.CompletionListener;
+import jakarta.jms.JMSContext;
+import jakarta.jms.JMSException;
+import jakarta.jms.JMSProducer;
 import jakarta.jms.Message;
 import jakarta.jms.MessageConsumer;
 import jakarta.jms.MessageProducer;
 import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
 
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class ProducerService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProducerService.class);
+
+    private final ActiveMQConnectionFactory connectionFactory;
     private final JmsTemplate jmsTemplate;
-    private final int timeoutMs = 5000;
+    // private final List<JmsTemplate> jmsTemplates; // all broker templates
 
-    // private int retry = 0;
-
-    public ProducerService(@Qualifier("jmsTemplate") JmsTemplate jmsTemplate) {
+    public ProducerService(
+        JmsTemplate jmsTemplate
+        // Map<String, JmsTemplate> jmsTemplates
+        , ActiveMQConnectionFactory connectionFactory
+    ) {
         this.jmsTemplate = jmsTemplate;
+        // this.jmsTemplates = List.copyOf(jmsTemplates.values());
+        this.connectionFactory = connectionFactory;
     }
+
+    // private JmsTemplate getRandomTemplate() {
+    //     int index = ThreadLocalRandom.current().nextInt(jmsTemplates.size());
+    //     return jmsTemplates.get(index);
+    // }
+
+    private final int timeoutMs = 5000;
 
     /** Synchronous send */
     @Retryable(
@@ -38,12 +59,54 @@ public class ProducerService {
             maxDelayExpression = "${spring.retry.max-delay:10000}"
         )
     )
-    public void send(String queueName, String message) {
+    public void send(String queueName, String message) throws JmsException {
+        // JmsTemplate jmsTemplate = getRandomTemplate();
         jmsTemplate.convertAndSend(queueName, message);
         logger.info("SYNC message sent: {}", message);
     }
 
+    /** Asynchronous send */
+    @Retryable(
+        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
+        backoff = @Backoff(
+            delayExpression = "${spring.retry.delay:1000}", 
+            multiplierExpression = "${spring.retry.multiplier:1.0}", 
+            maxDelayExpression = "${spring.retry.max-delay:10000}"
+        )
+    )
+    public CompletableFuture<Void> sendAsync(String queueName, String message) {
+        return CompletableFuture.runAsync(() -> {
+            try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
+                Queue queue = context.createQueue(queueName);
+                JMSProducer producer = context.createProducer();
+
+                producer.setAsync(new CompletionListener() {
+                    @Override
+                    public void onCompletion(Message msg) {
+                        try {
+                            logger.info("ASYNC send complete for {} (JMSMessageID={})",
+                                    queueName, msg.getJMSMessageID());
+                        } catch (JMSException e) {
+                            logger.warn("Failed to read JMSMessageID for async send", e);
+                        }
+                    }
+
+                    @Override
+                    public void onException(Message msg, Exception exception) {
+                        logger.error("ASYNC send failed for {}", queueName, exception);
+                    }
+                });
+
+                producer.send(queue, message);
+                logger.info("ASYNC send invoked for message: {}", message);
+            } catch (Exception e) {
+                logger.error("Failed to send async message", e);
+            }
+        });
+    }
+
     /** Transactional send */
+    // Caveat: the retry will re-send all messages in the transaction, so the consumer must be idempotent
     @Retryable(
         maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
         backoff = @Backoff(
@@ -67,6 +130,7 @@ public class ProducerService {
     }
 
     /** Request/Reply send */
+    // Caveat: the retry will re-send the request message, so the consumer must be idempotent
     @Retryable(
         maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
         backoff = @Backoff(
