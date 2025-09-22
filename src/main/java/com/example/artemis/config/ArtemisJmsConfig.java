@@ -1,6 +1,9 @@
 package com.example.artemis.config;
 
 import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.Session;
 
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
@@ -13,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.listener.DefaultMessageListenerContainer;
 import org.springframework.retry.annotation.EnableRetry;
 
 @Configuration
@@ -173,10 +177,39 @@ public class ArtemisJmsConfig {
 
     @Bean
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
-        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setSessionTransacted(listenerTransacted);
-        return factory;
+        // DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        // factory.setConnectionFactory(connectionFactory);
+        // factory.setSessionTransacted(listenerTransacted);
+        // return factory;
+
+        return new DefaultJmsListenerContainerFactory() {
+            @Override
+            protected DefaultMessageListenerContainer createContainerInstance() {
+                return new DefaultMessageListenerContainer() {                    
+                    {
+                        setConnectionFactory(connectionFactory);
+                        setSessionTransacted(listenerTransacted);
+                    }
+
+                    private final Logger log = LoggerFactory.getLogger(DefaultMessageListenerContainer.class);
+
+                    @Override
+                    protected void commitIfNecessary(Session session, Message message) throws JMSException {
+                        super.commitIfNecessary(session, message);
+                        if (message != null) {
+                            log.info(">>> JMS COMMIT for messageID={}", message.getJMSMessageID());
+                        } 
+                    }
+
+                    @Override
+                    protected void rollbackOnExceptionIfNecessary(Session session, Throwable ex)
+                        throws JMSException {
+                            super.rollbackOnExceptionIfNecessary(session, ex);
+                            log.warn(">>> JMS ROLLBACK", ex);
+                        }
+                };
+            }
+        };
     }
 
     @Bean
