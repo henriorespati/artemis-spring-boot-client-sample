@@ -1,7 +1,4 @@
 spring:
-  profiles:
-    active: single-broker # single-broker, multi-brokers
-
   artemis:
     user: admin
     password: password
@@ -24,13 +21,13 @@ spring:
       max-concurrency: 2            # max concurrent consumers
       session:
         acknowledge-mode: auto      # auto, client, dups-ok
-        transacted: false           # true = transacted session
+        transacted: true           # true = transacted session
 
     template:
       receive-timeout: 1000         # timeout for receive() in ms
       session:
         acknowledge-mode: auto      # auto, client, dups-ok
-        transacted: false           # true = transactional send
+        transacted: true           # true = transactional send
 
   retry:
     max-attempts: 2                 # max retry attempts for sending messages
@@ -53,6 +50,7 @@ logging:
     # org.apache.activemq.artemis: debug
     # org.apache.activemq.artemis.core.client: debug
     # org.apache.activemq.artemis.api.core.client: debug
-    # org.springframework.jms.listener: debug
+    org.springframework.jms.connection: debug
+    org.springframework.jms.listener: debug
     # org.apache.activemq.artemis.jms.client: debug
     org.messaginghub.pooled.jms: debug

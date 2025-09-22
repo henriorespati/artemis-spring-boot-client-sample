@@ -1,7 +1,6 @@
 package com.example.artemis.config;
 
 import jakarta.jms.ConnectionFactory;
-
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
@@ -10,14 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.retry.annotation.EnableRetry;
 
 @Configuration
 @EnableRetry
-@Profile("single-broker")
 public class ArtemisJmsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);

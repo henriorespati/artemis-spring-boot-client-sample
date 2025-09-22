@@ -20,9 +20,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class ProducerService {
@@ -31,22 +29,14 @@ public class ProducerService {
 
     private final JmsPoolConnectionFactory connectionFactory;
     private final JmsTemplate jmsTemplate;
-    // private final List<JmsTemplate> jmsTemplates; // all broker templates
 
     public ProducerService(
         JmsTemplate jmsTemplate
-        // Map<String, JmsTemplate> jmsTemplates
         , JmsPoolConnectionFactory connectionFactory
     ) {
         this.jmsTemplate = jmsTemplate;
-        // this.jmsTemplates = List.copyOf(jmsTemplates.values());
         this.connectionFactory = connectionFactory;
     }
-
-    // private JmsTemplate getRandomTemplate() {
-    //     int index = ThreadLocalRandom.current().nextInt(jmsTemplates.size());
-    //     return jmsTemplates.get(index);
-    // }
 
     private final int timeoutMs = 5000;
 
