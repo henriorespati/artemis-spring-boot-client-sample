@@ -15,7 +15,7 @@
         <java.version>17</java.version>
         <spring.boot.version>3.5.5</spring.boot.version>
         <artemis.version>2.33.0.redhat-00016</artemis.version>
-        <pooled-jms.version>3.1.7</pooled-jms.version>
+        <pooled-jms.version>3.1.7.redhat-00001</pooled-jms.version>
         <spring.retry.version>2.0.12</spring.retry.version>
         <aspectj.version>1.9.24</aspectj.version>
     </properties>
