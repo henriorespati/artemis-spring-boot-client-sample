@@ -1,27 +1,29 @@
 package com.example.artemis.controller;
 
-import com.example.artemis.service.ArtemisService;
-import org.springframework.http.ResponseEntity;
+import com.example.artemis.service.ProducerService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/artemis")
 public class ArtemisController {
 
-    private final ArtemisService service;
+    private static final Logger logger = LoggerFactory.getLogger(ArtemisController.class);
+    private final ProducerService producerService;
 
-    public ArtemisController(ArtemisService service) {
-        this.service = service;
+    @Value("${app.queue.async}")
+    private String asyncQueue;
+
+    public ArtemisController(ProducerService producerService) {
+        this.producerService = producerService;
     }
 
-    @PostMapping("/send/async/{queueName}")
-    public ResponseEntity<String> sendAsync(@PathVariable("queueName") String queueName,
-                                            @RequestBody String message) {
-        try {
-            service.sendAsync(queueName, message);
-            return ResponseEntity.ok("Async message sent");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error sending async message: " + e.getMessage());
-        }
+    @PostMapping("/send/async")
+    public String sendAsync(@RequestBody String message) {
+        producerService.sendAsync(asyncQueue, message);
+        return "ASYNC message sent successfully";
     }
 }

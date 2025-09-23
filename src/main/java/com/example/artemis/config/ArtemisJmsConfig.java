@@ -1,53 +1,143 @@
 package com.example.artemis.config;
 
-import com.example.artemis.jms.pool.ProducerPool;
-import jakarta.jms.ConnectionFactory;
-
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.config.JmsListenerEndpointRegistry;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.listener.DefaultMessageListenerContainer;
 
 @Configuration
 public class ArtemisJmsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
 
-    private final ArtemisProperties appProps;
+    @Autowired
+    private DefaultJmsListenerContainerFactory jmsListenerContainerFactory;
 
-    public ArtemisJmsConfig(ArtemisProperties appProps) {
-        this.appProps = appProps;
-    }
+    @Autowired
+    private JmsTemplate jmsTemplate;
 
+    // Log JMS configuration on startup
     @Bean
-    public ConnectionFactory pooledConnectionFactory(
-        @Value("${spring.artemis.broker-url}") String brokerUrl,
-        @Value("${spring.artemis.user}") String user,
-        @Value("${spring.artemis.password}") String password,
-        @Value("${spring.artemis.pool.max-connections}") int maxConnections,
-        @Value("${spring.artemis.pool.max-sessions-per-connection}") int maxSessionsPerConnection) {
+    CommandLineRunner check(
+            JmsPoolConnectionFactory pool,
+            JmsTemplate jmsTemplate,
+            JmsListenerEndpointRegistry registry
+    ) {
+        return args -> {
+            logger.debug("---- JMS CONFIGURATION CHECK ----");
 
-        ActiveMQConnectionFactory amqCf = new ActiveMQConnectionFactory(brokerUrl);
-        amqCf.setUser(user);
-        amqCf.setPassword(password);
-        amqCf.setConfirmationWindowSize(appProps.getConfirmationWindowSize());
+            // Force a connection to initialize the pool + delegate
+            try {
+                jmsTemplate.execute(session -> {
+                    logger.debug("Forcing connection creation for diagnostics...");
+                    return null;
+                });
+            } catch (Exception e) {
+                logger.warn("Dummy connection attempt failed: {}", e.getMessage());
+            }
 
-        JmsPoolConnectionFactory pooled = new JmsPoolConnectionFactory();
-        pooled.setConnectionFactory(amqCf);
-        pooled.setMaxConnections(maxConnections);
-        pooled.setMaxSessionsPerConnection(maxSessionsPerConnection);
-        pooled.setUseAnonymousProducers(true);
+            // ConnectionFactory
+            logger.debug("ConnectionFactory type: {}", pool.getClass().getName());
 
-        return pooled;
-    }
+            // Pooled ConnectionFactory settings
+            logger.debug("JmsPoolConnectionFactory settings:");
+            logger.debug("  maxConnections={} maxSessionsPerConnection={} blockIfFull={} blockIfFullTimeout(ms)={}",
+                    pool.getMaxConnections(),
+                    pool.getMaxSessionsPerConnection(),
+                    pool.isBlockIfSessionPoolIsFull(),
+                    pool.getBlockIfSessionPoolIsFullTimeout()
+            );
+            logger.debug("  connectionIdleTimeout(ms)={} connectionCheckInterval(ms)={} useProviderJMSContext={}",
+                    pool.getConnectionIdleTimeout(),
+                    pool.getConnectionCheckInterval(),
+                    pool.isUseProviderJMSContext()
+            );
+            logger.debug("  numConnectionsInUse={}", pool.getNumConnections());
 
-    @Bean
-    public ProducerPool producerPool(ConnectionFactory connectionFactory) {
-        logger.info("Creating ProducerPool");
-        return new ProducerPool(connectionFactory);
+            // Delegate factory
+            var delegate = pool.getConnectionFactory();
+            logger.debug("Delegate factory type: {}", delegate.getClass().getName());
+
+            if (delegate instanceof ActiveMQConnectionFactory amq) {
+                var locator = amq.getServerLocator();
+
+                // --- Artemis ServerLocator settings ---
+                logger.debug("Artemis ServerLocator settings:");
+                logger.debug("  confirmationWindowSize={} consumerWindowSize={}",
+                        locator.getConfirmationWindowSize(),
+                        locator.getConsumerWindowSize()
+                );
+                logger.debug("  blockOnDurableSend={} blockOnNonDurableSend={} blockOnAcknowledge={}",
+                        locator.isBlockOnDurableSend(),
+                        locator.isBlockOnNonDurableSend(),
+                        locator.isBlockOnAcknowledge()
+                );
+                logger.debug("  ackBatchSize={}",
+                        locator.getAckBatchSize()
+                );
+                logger.debug("  producerMaxRate={} consumerMaxRate={}",
+                        locator.getProducerMaxRate(),
+                        locator.getConsumerMaxRate()
+                );
+                logger.debug("  callTimeout(ms)={} callFailoverTimeout(ms)={} clientFailureCheckPeriod(ms)={}",
+                        locator.getCallTimeout(),
+                        locator.getCallFailoverTimeout(),
+                        locator.getClientFailureCheckPeriod()
+                );
+                logger.debug("  connectionTTL(ms)={} connectionLoadBalancingPolicyClassName={}",
+                        locator.getConnectionTTL(),
+                        locator.getConnectionLoadBalancingPolicyClassName()
+                );
+                logger.debug("  minLargeMessageSize={}",
+                        locator.getMinLargeMessageSize()
+                );
+                logger.debug("  useGlobalPools={} scheduledThreadPoolMaxSize={} threadPoolMaxSize={}",
+                        locator.isUseGlobalPools(),
+                        locator.getScheduledThreadPoolMaxSize(),
+                        locator.getThreadPoolMaxSize()
+                );
+                logger.debug("  initialConnectAttempts={} reconnectAttempts={} retryInterval={} retryIntervalMultiplier={} maxRetryInterval={}",
+                        locator.getInitialConnectAttempts(),
+                        locator.getReconnectAttempts(),
+                        locator.getRetryInterval(),
+                        locator.getRetryIntervalMultiplier(),
+                        locator.getMaxRetryInterval()
+                );
+            }            
+
+            // JmsTemplate
+            logger.debug("JmsTemplate settings:");
+            logger.debug("  sessionTransacted={} acknowledgeMode={} receiveTimeout(ms)={}",
+                    jmsTemplate.isSessionTransacted(),
+                    jmsTemplate.getSessionAcknowledgeMode(),
+                    jmsTemplate.getReceiveTimeout()
+            );
+
+            // JMS Listener Container Factory
+            logger.debug("JmsListenerContainerFactory settings:");
+            if (!registry.getListenerContainers().isEmpty()) {
+                registry.getListenerContainers().forEach(container -> {
+                    if (container instanceof DefaultMessageListenerContainer dmlc) {
+                        logger.debug("  concurrency={} maxConcurrency={}",
+                                dmlc.getConcurrentConsumers(),
+                                dmlc.getMaxConcurrentConsumers()
+                        );
+                    } 
+                });
+            } else {
+                logger.debug("No listener containers registered yet");
+            }
+
+            logger.debug("---- END JMS CONFIGURATION CHECK ----");
+        };
     }
 
 }
