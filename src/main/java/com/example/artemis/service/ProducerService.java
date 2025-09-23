@@ -13,10 +13,9 @@ import jakarta.jms.TextMessage;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,43 +26,44 @@ public class ProducerService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProducerService.class);
 
+    @Value("${spring.jms.template.receive-timeout}")
+    private int receiveTimeout;
+
     private final JmsPoolConnectionFactory connectionFactory;
     private final JmsTemplate jmsTemplate;
 
-    public ProducerService(
-        JmsTemplate jmsTemplate
-        , JmsPoolConnectionFactory connectionFactory
-    ) {
+    public ProducerService(JmsTemplate jmsTemplate, JmsPoolConnectionFactory connectionFactory) {
         this.jmsTemplate = jmsTemplate;
         this.connectionFactory = connectionFactory;
     }
 
-    private final int timeoutMs = 5000;
-
-    /** Synchronous send */
-    @Retryable(
-        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
-        backoff = @Backoff(
-            delayExpression = "${spring.retry.delay:1000}", 
-            multiplierExpression = "${spring.retry.multiplier:1.0}", 
-            maxDelayExpression = "${spring.retry.max-delay:10000}"
-        )
-    )
-    public void send(String queueName, String message) throws JmsException {
-        // JmsTemplate jmsTemplate = getRandomTemplate();
-        jmsTemplate.convertAndSend(queueName, message);
-        logger.info("SYNC message sent: {}", message);
+    /** Scenario 1: Synchronous send */
+    public void send(String queueName, String message) {
+        try {
+            jmsTemplate.convertAndSend(queueName, message);
+            logger.info("SYNC message sent: {}", message);
+        } catch (JmsException e) {
+            logger.error("Failed to send sync message", e);
+            throw e;
+        }
     }
 
-    /** Asynchronous send */
-    @Retryable(
-        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
-        backoff = @Backoff(
-            delayExpression = "${spring.retry.delay:1000}", 
-            multiplierExpression = "${spring.retry.multiplier:1.0}", 
-            maxDelayExpression = "${spring.retry.max-delay:10000}"
-        )
-    )
+    /** Scenario 2: Transactional send */
+    public void sendTransaction(String queueName, List<String> messages) {
+        jmsTemplate.execute(session -> {
+            var producer = session.createProducer(session.createQueue(queueName));
+            for (String msg : messages) {
+                producer.send(session.createTextMessage(msg));
+                logger.info("Transactional message sent: {}", msg);
+            }
+            // Commit the transaction
+            session.commit();
+            logger.info("Transaction committed with {} messages", messages.size());
+            return null;
+        }, true); // sessionTransacted=true
+    }
+
+    /** Scenario 3: Asynchronous send */
     public CompletableFuture<Void> sendAsync(String queueName, String message) {
         return CompletableFuture.runAsync(() -> {
             try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
@@ -95,40 +95,7 @@ public class ProducerService {
         });
     }
 
-    /** Transactional send */
-    // Caveat: the retry will re-send all messages in the transaction, so the consumer must be idempotent
-    @Retryable(
-        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
-        backoff = @Backoff(
-            delayExpression = "${spring.retry.delay:1000}", 
-            multiplierExpression = "${spring.retry.multiplier:1.0}", 
-            maxDelayExpression = "${spring.retry.max-delay:10000}"
-        )
-    )
-    public void sendTransaction(String queueName, List<String> messages) {
-        jmsTemplate.execute(session -> {
-            var producer = session.createProducer(session.createQueue(queueName));
-            for (String msg : messages) {
-                producer.send(session.createTextMessage(msg));
-                logger.info("Transactional message sent: {}", msg);
-            }
-            // Commit the transaction
-            session.commit();
-            logger.info("Transaction committed with {} messages", messages.size());
-            return null;
-        }, true); // sessionTransacted=true
-    }
-
-    /** Request/Reply send */
-    // Caveat: the retry will re-send the request message, so the consumer must be idempotent
-    @Retryable(
-        maxAttemptsExpression = "${spring.retry.max-attempts:2}", 
-        backoff = @Backoff(
-            delayExpression = "${spring.retry.delay:1000}", 
-            multiplierExpression = "${spring.retry.multiplier:1.0}", 
-            maxDelayExpression = "${spring.retry.max-delay:10000}"
-        )
-    )
+    /** Scenario 4: Request/Reply send */
     public String sendRequest(String requestQueueName, String message) {
         return jmsTemplate.execute(session -> {
             MessageProducer producer = session.createProducer(session.createQueue(requestQueueName));
@@ -138,7 +105,7 @@ public class ProducerService {
             producer.send(msg);
 
             MessageConsumer consumer = session.createConsumer(replyQueue);
-            Message reply = consumer.receive(timeoutMs);
+            Message reply = consumer.receive(receiveTimeout);
 
             if (reply != null) {
                 String replyText = ((TextMessage) reply).getText();
@@ -148,6 +115,6 @@ public class ProducerService {
                 logger.warn("Request message sent: '{}', but no reply received after timeout", message);
                 return null;
             }
-        }, true); // sessionTransacted=true
+        }, true); 
     }
 }
