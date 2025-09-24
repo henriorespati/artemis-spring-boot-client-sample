@@ -21,15 +21,16 @@ spring:
     listener:
       min-concurrency: 2            # min concurrent consumers
       max-concurrency: 2            # max concurrent consumers
+      session:
+        transacted: true            # use transacted sessions
 
     template:
       receive-timeout: 1000         # timeout for receive() in ms
+      session:
+        transacted: true            # use transacted sessions
 
 app:
   queue:
-    async: asyncQueue
-    request: requestQueue
-    sync: syncQueue
     transaction: transactionQueue
 
 logging:
