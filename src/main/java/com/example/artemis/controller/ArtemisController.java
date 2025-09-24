@@ -9,10 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
-@RequestMapping("/artemis")
+@RequestMapping("/artemis/send")
 public class ArtemisController {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisController.class);
@@ -24,6 +23,9 @@ public class ArtemisController {
     @Value("${app.queue.request}")
     private String requestQueueName;
 
+    @Value("${app.queue.reply}")
+    private String replyQueueName;
+
     @Value("${app.queue.sync}")
     private String syncQueueName;
 
@@ -34,7 +36,7 @@ public class ArtemisController {
         this.producerService = producerService;
     }
 
-    @PostMapping("/send/sync")
+    @PostMapping("/sync")
     public ResponseEntity<String> sendSync(@RequestBody String message) {
         try {
             producerService.send(syncQueueName, message);
@@ -45,25 +47,40 @@ public class ArtemisController {
         }
     }
 
-    @PostMapping("/send/async")
-    public CompletableFuture<ResponseEntity<String>> sendAsync(@RequestBody String message) {
-        return producerService.sendAsync(asyncQueueName, message)
-                .thenApply(v -> ResponseEntity.ok("ASYNC message sent successfully"))
-                .exceptionally(ex -> {
-                    logger.error("Async send failed", ex);
-                    return ResponseEntity.status(500).body("Async send failed");
-                });
+    @PostMapping("/async")
+    public ResponseEntity<String> sendAsync(@RequestBody String message) {
+        try {
+            producerService.sendAsync(asyncQueueName, message);
+            return ResponseEntity.ok("ASYNC message sent successfully");
+        } catch (Exception e) {
+            logger.error("Failed to send async message", e);
+            return ResponseEntity.status(500).body("Error sending async message: " + e.getMessage());
+        }
     }
 
-    @PostMapping("/send/request")
-    public String sendRequest(@RequestBody String message) {
-        String reply = producerService.sendRequest(requestQueueName, message);
-        return reply != null ? "Received reply: " + reply : "No reply";
+    @PostMapping("/request")
+    public ResponseEntity<String> sendRequest(@RequestBody String message) {
+        try {
+            String reply = producerService.sendRequest(requestQueueName, replyQueueName, message);
+            if (reply != null) {
+                return ResponseEntity.ok("Received reply: " + reply);
+            } else {
+                return ResponseEntity.status(204).body("No reply received");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to send request message", e);
+            return ResponseEntity.status(500).body("Error sending request message: " + e.getMessage());
+        }
     }
 
-    @PostMapping("/send/transaction")
-    public String sendTransaction(@RequestBody List<String> messages) {
-        producerService.sendTransaction(transactionQueueName, messages);
-        return "Transactional send committed";
+    @PostMapping("/transaction")
+    public ResponseEntity<String> sendTransaction(@RequestBody List<String> messages) {
+        try {
+            producerService.sendTransaction(transactionQueueName, messages);
+            return ResponseEntity.ok("Transactional send committed");
+        } catch (Exception e) {
+            logger.error("Failed to send transactional messages", e);
+            return ResponseEntity.status(500).body("Error sending transactional messages: " + e.getMessage());
+        }
     }
 }

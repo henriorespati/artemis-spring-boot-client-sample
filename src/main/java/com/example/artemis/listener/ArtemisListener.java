@@ -3,11 +3,10 @@ package com.example.artemis.listener;
 import jakarta.jms.TextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import jakarta.jms.Destination;
 import jakarta.jms.Message;
 import jakarta.jms.Session;
@@ -18,7 +17,7 @@ public class ArtemisListener {
     private static final Logger logger = LoggerFactory.getLogger(ArtemisListener.class);
     private final JmsTemplate jmsTemplate;
 
-    public ArtemisListener(JmsTemplate jmsTemplate) {
+    public ArtemisListener(@Qualifier("defaultJmsTemplate") JmsTemplate jmsTemplate) {
         this.jmsTemplate = jmsTemplate;
     }
 
@@ -33,39 +32,30 @@ public class ArtemisListener {
     }
 
     /** Scenario 1: Synchronous consumption */
-    // Session CLIENT_ACKNOWLEDGE must be set in the listener container factory
-    @JmsListener(destination = "${app.queue.sync}", containerFactory = "jmsListenerContainerFactory")
+    // Session ack mode = CLIENT_ACKNOWLEDGE 
+    @JmsListener(destination = "${app.queue.sync}", containerFactory = "syncJmsListenerContainerFactory")
     public void receiveSync(Message message, Session session) throws Exception {
         try {
             if (message instanceof TextMessage text) {
                 logger.info("Received SYNC: {}", text.getText());
+
+                // Acknowledge the message after processing
+                try {
+                    message.acknowledge();
+                    logger.info("Message acknowledged");
+                } catch (Exception e) {
+                    logger.error("Failed to acknowledge message", e);
+                    throw e;
+                }
             }
-            logger.debug("Acknowledgement mode: {}", getAckModeName(session.getAcknowledgeMode()));
-            message.acknowledge();
-            logger.info("Message acknowledged");
         } catch (Exception e) {
-            logger.error("Processing failed, message is NOT acknowledged", e);
+            logger.error("Message processing failed", e);
             throw e; 
         }
     }
 
-    /** Scenario 2: Asynchronous consumption */
-    // Session AUTO_ACKNOWLEDGE must be set in the listener container factory
-    @JmsListener(destination = "${app.queue.async}", containerFactory = "jmsListenerContainerFactory")
-    public void receiveAsync(TextMessage message) throws Exception {
-        try {
-            logger.info("ASYNC message received: {}", message.getText()); 
-        } catch (Exception e) {
-            logger.error("Processing failed", e);
-            throw e; 
-        }
-        
-    }
-
-    /** Scenario 3: Transactional consumption */
-    // Session transacted must be set to true in the listener container factory
-    // Use JMS transaction manager
-    @Transactional
+    /** Scenario 2: Transactional consumption */
+    // Session transacted = true 
     @JmsListener(destination = "${app.queue.transaction}", containerFactory = "txJmsListenerContainerFactory")
     public void receiveTransaction(TextMessage message) throws Exception {
         try {
@@ -77,8 +67,20 @@ public class ArtemisListener {
         }
     }
 
+    /** Scenario 3: Asynchronous consumption */
+    // Session ack mode = AUTO_ACKNOWLEDGE 
+    @JmsListener(destination = "${app.queue.async}", containerFactory = "defaultJmsListenerContainerFactory")
+    public void receiveAsync(TextMessage message) throws Exception {
+        try {
+            logger.info("ASYNC message received: {}", message.getText()); 
+        } catch (Exception e) {
+            logger.error("Processing failed", e);
+            throw e; 
+        }        
+    }
+
     /** Scenario 4: Request-Reply consumption */
-    @JmsListener(destination = "${app.queue.request}", containerFactory = "jmsListenerContainerFactory")
+    @JmsListener(destination = "${app.queue.request}", containerFactory = "defaultJmsListenerContainerFactory")
     public void receiveAndReply(TextMessage message) throws Exception {
         try {
             String text = message.getText();
@@ -87,7 +89,11 @@ public class ArtemisListener {
             Destination replyDest = message.getJMSReplyTo();
             if (replyDest != null) {
                 String replyText = "Reply to: " + text;
-                jmsTemplate.send(replyDest, session -> session.createTextMessage(replyText));
+                jmsTemplate.send(replyDest, session -> {
+                    TextMessage replyMessage = session.createTextMessage(replyText);
+                    replyMessage.setJMSCorrelationID(message.getJMSCorrelationID());
+                    return replyMessage;
+                });
                 logger.info("Sent reply: {} to queue {}", replyText, replyDest);
             } else {
                 logger.warn("No JMSReplyTo set, cannot send reply for message: {}", text);

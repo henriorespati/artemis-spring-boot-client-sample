@@ -1,25 +1,20 @@
 package com.example.artemis.service;
 
-import jakarta.jms.CompletionListener;
-import jakarta.jms.JMSContext;
+import jakarta.annotation.PostConstruct;
 import jakarta.jms.JMSException;
-import jakarta.jms.JMSProducer;
 import jakarta.jms.Message;
-import jakarta.jms.MessageConsumer;
-import jakarta.jms.MessageProducer;
-import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
 
-import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
 
 @Service
 public class ProducerService {
@@ -29,18 +24,29 @@ public class ProducerService {
     @Value("${spring.jms.template.receive-timeout}")
     private int receiveTimeout;
 
-    private final JmsPoolConnectionFactory connectionFactory;
-    private final JmsTemplate jmsTemplate;
+    private final JmsTemplate defaultJmsTemplate;
+    private final JmsTemplate syncJmsTemplate;
+    private final JmsTemplate txJmsTemplate;
 
-    public ProducerService(JmsTemplate jmsTemplate, JmsPoolConnectionFactory connectionFactory) {
-        this.jmsTemplate = jmsTemplate;
-        this.connectionFactory = connectionFactory;
+    public ProducerService(
+            @Qualifier("defaultJmsTemplate") JmsTemplate defaultJmsTemplate,
+            @Qualifier("syncJmsTemplate") JmsTemplate syncJmsTemplate,
+            @Qualifier("txJmsTemplate") JmsTemplate txJmsTemplate) {
+        this.defaultJmsTemplate = defaultJmsTemplate;
+        this.syncJmsTemplate = syncJmsTemplate;
+        this.txJmsTemplate = txJmsTemplate;
+    }
+
+    @PostConstruct
+    public void init() {
+        logger.info("ProducerService bean class = {}", this.getClass().getName());
     }
 
     /** Scenario 1: Synchronous send */
+    // blockOnAcknowledge = true
     public void send(String queueName, String message) {
         try {
-            jmsTemplate.convertAndSend(queueName, message);
+            syncJmsTemplate.convertAndSend(queueName, message);
             logger.info("SYNC message sent: {}", message);
         } catch (JmsException e) {
             logger.error("Failed to send sync message", e);
@@ -49,72 +55,70 @@ public class ProducerService {
     }
 
     /** Scenario 2: Transactional send */
+    // Session transacted = true
     public void sendTransaction(String queueName, List<String> messages) {
-        jmsTemplate.execute(session -> {
-            var producer = session.createProducer(session.createQueue(queueName));
-            for (String msg : messages) {
-                producer.send(session.createTextMessage(msg));
-                logger.info("Transactional message sent: {}", msg);
-            }
-            // Commit the transaction
-            session.commit();
-            logger.info("Transaction committed with {} messages", messages.size());
-            return null;
-        }, true); // sessionTransacted=true
+        try {
+            txJmsTemplate.execute(session -> {
+                var producer = session.createProducer(session.createQueue(queueName));
+                for (String msg : messages) {
+                    producer.send(session.createTextMessage(msg));
+                    logger.info("Transactional message sent: {}", msg);
+                }
+                // Commit the transaction
+                session.commit();
+                logger.info("Transaction committed with {} messages", messages.size());
+                return null;
+            }, true); 
+        } catch (Exception e) {
+            logger.error("Transaction rolled back", e);
+            throw e;
+        }
     }
 
     /** Scenario 3: Asynchronous send */
-    public CompletableFuture<Void> sendAsync(String queueName, String message) {
-        return CompletableFuture.runAsync(() -> {
-            try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
-                Queue queue = context.createQueue(queueName);
-                JMSProducer producer = context.createProducer();
-
-                producer.setAsync(new CompletionListener() {
-                    @Override
-                    public void onCompletion(Message msg) {
-                        try {
-                            logger.info("ASYNC send complete for {} (JMSMessageID={})",
-                                    queueName, msg.getJMSMessageID());
-                        } catch (JMSException e) {
-                            logger.warn("Failed to read JMSMessageID for async send", e);
-                        }
-                    }
-
-                    @Override
-                    public void onException(Message msg, Exception exception) {
-                        logger.error("ASYNC send failed for {}", queueName, exception);
-                    }
-                });
-
-                producer.send(queue, message);
-                logger.info("ASYNC send invoked for message: {}", message);
-            } catch (Exception e) {
-                logger.error("Failed to send async message", e);
-            }
-        });
+    // blockOnAcknowledge = false 
+    @Async
+    public void sendAsync(String queueName, String message) {
+        try {
+            defaultJmsTemplate.convertAndSend(queueName, message);
+            logger.info("ASYNC send invoked for message: {}", message);
+        } catch (Exception e) {
+            logger.error("Failed to send ASYNC message: {}", message, e);
+        }
     }
 
     /** Scenario 4: Request/Reply send */
-    public String sendRequest(String requestQueueName, String message) {
-        return jmsTemplate.execute(session -> {
-            MessageProducer producer = session.createProducer(session.createQueue(requestQueueName));
-            Queue replyQueue = session.createTemporaryQueue();
-            TextMessage msg = session.createTextMessage(message);
-            msg.setJMSReplyTo(replyQueue);
-            producer.send(msg);
+    // Use durable queue for reply
+    public String sendRequest(String requestQueueName, String replyQueueName, String message) {
+        // Generate a unique correlation ID for this request
+        String correlationId = UUID.randomUUID().toString();
 
-            MessageConsumer consumer = session.createConsumer(replyQueue);
-            Message reply = consumer.receive(receiveTimeout);
+        // Set a custom reply selector so we only receive our message
+        String selector = "JMSCorrelationID = '" + correlationId + "'";
+
+        try {
+            // Send the request message with the correlation ID and reply queue
+            defaultJmsTemplate.send(requestQueueName, session -> {
+                TextMessage msg = session.createTextMessage(message);
+                msg.setJMSReplyTo(session.createQueue(replyQueueName));
+                msg.setJMSCorrelationID(correlationId);
+                return msg;
+            });
+
+            Message reply = defaultJmsTemplate.receiveSelected(replyQueueName, selector);
 
             if (reply != null) {
                 String replyText = ((TextMessage) reply).getText();
-                logger.info("Request message sent: '{}', received message: '{}'", message, replyText);
+                logger.info("Request message sent: '{}', received message: '{}', correlationId: {}", 
+                    message, replyText, correlationId);
                 return replyText;
             } else {
-                logger.warn("Request message sent: '{}', but no reply received after timeout", message);
+                logger.warn("Request message sent: '{}', but no reply received", message);
                 return null;
             }
-        }, true); 
+        } catch (JMSException e) {
+            logger.error("Failed to send or receive JMS message", e);
+            return null;
+        }
     }
 }

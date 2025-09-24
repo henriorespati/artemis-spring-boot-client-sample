@@ -3,7 +3,7 @@ spring:
     user: admin
     password: password
     broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false
-    ##useTopologyForLoadBalancing=true
+    ##&useTopologyForLoadBalancing=true
     ##&reconnectAttempts=5&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000
     ##&consumerWindowSize=-1&producerWindowSize=-1
     ##&confirmationWindowSize=1048576&blockOnDurableSend=false&blockOnAcknowledge=false&connectionTtl=60000
@@ -29,6 +29,7 @@ app:
   queue:
     async: asyncQueue
     request: requestQueue
+    reply: replyQueue
     sync: syncQueue
     transaction: transactionQueue
 
@@ -41,5 +42,9 @@ logging:
     # org.apache.activemq.artemis.api.core.client: debug
     # org.apache.activemq.artemis.jms.client: debug
     # org.springframework.jms.connection: debug
-    # org.springframework.jms.listener: debug    
+    # org.springframework.jms.listener: debug
+    # org.springframework.jms: debug  
+    # org.springframework.transaction: debug  
     # org.messaginghub.pooled.jms: debug
+    # org.messaginghub.pooled.jms.JmsPoolConnection: debug
+    
