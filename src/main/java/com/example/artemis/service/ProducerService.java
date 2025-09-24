@@ -13,6 +13,8 @@ import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,6 +47,8 @@ public class ProducerService {
     /** Scenario 1: Synchronous send */
     // blockOnAcknowledge = true
     public void send(String queueName, String message) {
+
+        LocalDateTime now = LocalDateTime.now();
         try {
             syncJmsTemplate.convertAndSend(queueName, message);
             logger.info("SYNC message sent: {}", message);
@@ -52,6 +56,8 @@ public class ProducerService {
             logger.error("Failed to send sync message", e);
             throw e;
         }
+        LocalDateTime after = LocalDateTime.now();
+        logger.info("Time taken to send SYNC message: {} ms", java.time.Duration.between(now, after).toMillis());
     }
 
     /** Scenario 2: Transactional send */

@@ -2,7 +2,7 @@ spring:
   artemis:
     user: admin
     password: password
-    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false
+    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&callTimeout=100
     ##&useTopologyForLoadBalancing=true
     ##&reconnectAttempts=5&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000
     ##&consumerWindowSize=-1&producerWindowSize=-1
@@ -10,8 +10,8 @@ spring:
     
     pool:
       enabled: true                     # enable JmsPoolConnectionFactory
-      max-connections: 2                # max physical connections
-      max-sessions-per-connection: 20   # max sessions per connection
+      max-connections: 1                # max physical connections
+      max-sessions-per-connection: 2000   # max sessions per connection
       idle-timeout: 30000               # ms before idle connections are closed
       block-if-full: true               # block when max connections reached
       block-if-full-timeout: 5000       # ms to wait for a connection, -1 = forever
