@@ -27,10 +27,7 @@ spring:
 
 app:
   queue:
-    async: asyncQueue
     request: requestQueue
-    sync: syncQueue
-    transaction: transactionQueue
 
 logging:
   level:
