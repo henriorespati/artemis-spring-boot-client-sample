@@ -4,45 +4,23 @@ import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
-import org.springframework.jms.connection.JmsTransactionManager;
 import org.springframework.jms.core.JmsTemplate;
-
-import jakarta.jms.Session;
 
 @Configuration
 public class ArtemisJmsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
 
-    @Value("${spring.artemis.user}")
-    private String artemisUser;
+    @Autowired
+    private DefaultJmsListenerContainerFactory jmsListenerContainerFactory;
 
-    @Value("${spring.artemis.password}")
-    private String artemisPassword;
-
-    @Value("${spring.artemis.broker-url}")
-    private String brokerUrl;
-
-    @Value("${spring.artemis.pool.max-connections}")
-    private int poolMaxConnections;
-
-    @Value("${spring.artemis.pool.max-sessions-per-connection}")
-    private int poolMaxSessionsPerConnection;
-
-    @Value("${spring.jms.listener.min-concurrency}")
-    private int listenerMinConcurrency;
-
-    @Value("${spring.jms.listener.max-concurrency}")
-    private int listenerMaxConcurrency;
-
-    @Value("${spring.jms.template.receive-timeout}")
-    private int templateReceiveTimeout;
+    @Autowired
+    private JmsTemplate jmsTemplate;
 
     @Bean
     CommandLineRunner check(
@@ -153,55 +131,6 @@ public class ArtemisJmsConfig {
 
             logger.debug("---- END JMS CONFIGURATION CHECK ----");
         };
-    }
-
-
-    @Bean
-    public JmsPoolConnectionFactory pooledConnectionFactory() {
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
-        factory.setUser(artemisUser);
-        factory.setPassword(artemisPassword);
-
-        JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
-        pool.setConnectionFactory(factory);
-        pool.setMaxConnections(poolMaxConnections);
-        pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
-        return pool;
-    }
-
-    @Primary
-    @Bean
-    public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(JmsPoolConnectionFactory connectionFactory) {
-        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // for SYNC listener
-        // factory.setSessionAcknowledgeMode(Session.AUTO_ACKNOWLEDGE); // for ASYNC listener
-        factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
-        return factory;
-    }
-
-    @Bean
-    public JmsTransactionManager jmsTransactionManager(JmsPoolConnectionFactory connectionFactory) {
-        return new JmsTransactionManager(connectionFactory);
-    }
-
-    // Transactional listener container factory
-    @Bean
-    public DefaultJmsListenerContainerFactory txJmsListenerContainerFactory(
-            JmsPoolConnectionFactory connectionFactory, JmsTransactionManager transactionManager) {
-        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
-        factory.setSessionTransacted(true);
-        factory.setTransactionManager(transactionManager);
-        return factory;
-    }
-
-    @Bean
-    public JmsTemplate jmsTemplate(JmsPoolConnectionFactory connectionFactory) {
-        JmsTemplate template = new JmsTemplate(connectionFactory);
-        template.setReceiveTimeout(templateReceiveTimeout);
-        return template;
     }
 
 }
