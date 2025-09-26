@@ -18,6 +18,7 @@ public class ProducerService {
     }
 
     // Synchronous send
+    // blockOnAcknowledge = true
     public void send(String queueName, String message) {
         try {
             jmsTemplate.convertAndSend(queueName, message);

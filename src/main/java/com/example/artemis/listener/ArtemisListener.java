@@ -15,16 +15,23 @@ public class ArtemisListener {
 
     // Synchronous consumption
     // Session acknowledge mode must be set to "client" 
-    @JmsListener(destination = "${app.queue.sync}", containerFactory = "jmsListenerContainerFactory")
+    @JmsListener(destination = "${app.queue.sync}")
     public void receiveSync(Message message, Session session) throws Exception {
         try {
             if (message instanceof TextMessage text) {
-                logger.info("Received SYNC: {}", text.getText());            
-                message.acknowledge();
-                logger.info("Message acknowledged");
+                logger.info("Received SYNC: {}", text.getText());
+
+                // Acknowledge the message after processing
+                try {
+                    message.acknowledge();
+                    logger.info("Message acknowledged");
+                } catch (Exception e) {
+                    logger.error("Failed to acknowledge message", e);
+                    throw e;
+                }
             }
         } catch (Exception e) {
-            logger.error("Processing failed, message is NOT acknowledged", e);
+            logger.error("Message processing failed", e);
             throw e; 
         }
     }
