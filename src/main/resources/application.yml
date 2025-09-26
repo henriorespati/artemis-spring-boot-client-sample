@@ -2,7 +2,7 @@ spring:
   artemis:
     user: admin
     password: password
-    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&reconnectAttempts=1&failoverAttempts=1&callTimeout=10000&blockonAcknowledge=false
+    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&reconnectAttempts=1&failoverAttempts=1&callTimeout=10000&blockOnAcknowledge=false
     ##&useTopologyForLoadBalancing=false
     ##&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000
     ##&consumerWindowSize=-1&producerWindowSize=-1
