@@ -26,13 +26,7 @@ spring:
 
 app:
   queue:
-    async: asyncQueue
-    request: requestQueue
-    reply: replyQueue
-    sync: syncQueue
-    transaction: transactionQueue
-  consumer:
-    callback-url: http://localhost:8080/artemis/receive/transaction
+    test: testQueue
 
 logging:
   level:
