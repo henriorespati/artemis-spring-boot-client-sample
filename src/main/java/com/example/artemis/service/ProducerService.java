@@ -13,6 +13,7 @@ import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,17 +27,23 @@ public class ProducerService {
     @Value("${spring.jms.template.receive-timeout}")
     private int receiveTimeout;
 
+    @Value("${app.consumer.callback-url}")
+    private String consumerCallbackUrl;
+
     private final JmsTemplate defaultJmsTemplate;
     private final JmsTemplate syncJmsTemplate;
     private final JmsTemplate txJmsTemplate;
+    private final RestTemplate restTemplate;
 
     public ProducerService(
             @Qualifier("defaultJmsTemplate") JmsTemplate defaultJmsTemplate,
             @Qualifier("syncJmsTemplate") JmsTemplate syncJmsTemplate,
-            @Qualifier("txJmsTemplate") JmsTemplate txJmsTemplate) {
+            @Qualifier("txJmsTemplate") JmsTemplate txJmsTemplate,
+            RestTemplate restTemplate) {
         this.defaultJmsTemplate = defaultJmsTemplate;
         this.syncJmsTemplate = syncJmsTemplate;
         this.txJmsTemplate = txJmsTemplate;
+        this.restTemplate = restTemplate;
     }
 
     @PostConstruct
@@ -63,16 +70,27 @@ public class ProducerService {
     /** Scenario 2: Transactional send */
     // Session transacted = true
     public void sendTransaction(String queueName, List<String> messages) {
+        String batchId = UUID.randomUUID().toString();
+        int batchSize = messages.size();
+
         try {
             txJmsTemplate.execute(session -> {
                 var producer = session.createProducer(session.createQueue(queueName));
                 for (String msg : messages) {
                     producer.send(session.createTextMessage(msg));
+                    TextMessage msgText = session.createTextMessage(msg);
+                    msgText.setStringProperty("batchId", batchId);
+                    msgText.setIntProperty("batchSize", batchSize);
+                    producer.send(msgText);
                     logger.info("Transactional message sent: {}", msg);
                 }
                 // Commit the transaction
                 session.commit();
-                logger.info("Transaction committed with {} messages", messages.size());
+                logger.info("Transaction {} sent and committed with {} messages", batchId, batchSize);
+
+                // Optional: Trigger the consumer REST API to process the batch immediately after sending
+                restTemplate.postForObject(consumerCallbackUrl, batchId, String.class);
+
                 return null;
             }, true); 
         } catch (Exception e) {

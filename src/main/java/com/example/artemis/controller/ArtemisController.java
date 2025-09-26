@@ -1,5 +1,6 @@
 package com.example.artemis.controller;
 
+import com.example.artemis.listener.ArtemisListener;
 import com.example.artemis.service.ProducerService;
 
 import org.slf4j.Logger;
@@ -11,11 +12,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/artemis/send")
+@RequestMapping("/artemis")
 public class ArtemisController {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisController.class);
     private final ProducerService producerService;
+    private final ArtemisListener artemisListener;
 
     @Value("${app.queue.async}")
     private String asyncQueueName;
@@ -32,11 +34,12 @@ public class ArtemisController {
     @Value("${app.queue.transaction}")
     private String transactionQueueName;
 
-    public ArtemisController(ProducerService producerService) {
+    public ArtemisController(ProducerService producerService, ArtemisListener artemisListener) {
         this.producerService = producerService;
+        this.artemisListener = artemisListener;
     }
 
-    @PostMapping("/sync")
+    @PostMapping("/send/sync")
     public ResponseEntity<String> sendSync(@RequestBody String message) {
         try {
             producerService.send(syncQueueName, message);
@@ -47,7 +50,7 @@ public class ArtemisController {
         }
     }
 
-    @PostMapping("/async")
+    @PostMapping("/send/async")
     public ResponseEntity<String> sendAsync(@RequestBody String message) {
         try {
             producerService.sendAsync(asyncQueueName, message);
@@ -58,7 +61,7 @@ public class ArtemisController {
         }
     }
 
-    @PostMapping("/request")
+    @PostMapping("/send/request")
     public ResponseEntity<String> sendRequest(@RequestBody String message) {
         try {
             String reply = producerService.sendRequest(requestQueueName, replyQueueName, message);
@@ -73,10 +76,21 @@ public class ArtemisController {
         }
     }
 
-    @PostMapping("/transaction")
+    @PostMapping("/send/transaction")
     public ResponseEntity<String> sendTransaction(@RequestBody List<String> messages) {
         try {
             producerService.sendTransaction(transactionQueueName, messages);
+            return ResponseEntity.ok("Transactional send committed");
+        } catch (Exception e) {
+            logger.error("Failed to send transactional messages", e);
+            return ResponseEntity.status(500).body("Error sending transactional messages: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/receive/transaction")
+    public ResponseEntity<String> receiveTransaction(@RequestBody String batchId) {
+        try {
+            artemisListener.receiveTransaction(transactionQueueName, batchId);
             return ResponseEntity.ok("Transactional send committed");
         } catch (Exception e) {
             logger.error("Failed to send transactional messages", e);

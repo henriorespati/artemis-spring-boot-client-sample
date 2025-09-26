@@ -1,14 +1,20 @@
 package com.example.artemis.listener;
 
 import jakarta.jms.TextMessage;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 import jakarta.jms.Destination;
 import jakarta.jms.Message;
+import jakarta.jms.MessageConsumer;
+import jakarta.jms.Queue;
 import jakarta.jms.Session;
 
 @Component
@@ -16,19 +22,16 @@ public class ArtemisListener {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisListener.class);
     private final JmsTemplate jmsTemplate;
+    private final JmsTemplate txJmsTemplate;
 
-    public ArtemisListener(@Qualifier("defaultJmsTemplate") JmsTemplate jmsTemplate) {
+    @Value("${spring.jms.template.receive-timeout}")
+    private int receiveTimeout;
+
+    public ArtemisListener(
+            @Qualifier("defaultJmsTemplate") JmsTemplate jmsTemplate,
+            @Qualifier("txJmsTemplate") JmsTemplate txJmsTemplate) {
         this.jmsTemplate = jmsTemplate;
-    }
-
-    private String getAckModeName(int mode) {
-        switch(mode) {
-            case Session.AUTO_ACKNOWLEDGE: return "AUTO_ACKNOWLEDGE";
-            case Session.CLIENT_ACKNOWLEDGE: return "CLIENT_ACKNOWLEDGE";
-            case Session.DUPS_OK_ACKNOWLEDGE: return "DUPS_OK_ACKNOWLEDGE";
-            case Session.SESSION_TRANSACTED: return "SESSION_TRANSACTED";
-            default: return "UNKNOWN";
-        }
+        this.txJmsTemplate = txJmsTemplate;
     }
 
     /** Scenario 1: Synchronous consumption */
@@ -56,14 +59,37 @@ public class ArtemisListener {
 
     /** Scenario 2: Transactional consumption */
     // Session transacted = true 
-    @JmsListener(destination = "${app.queue.transaction}", containerFactory = "txJmsListenerContainerFactory")
-    public void receiveTransaction(TextMessage message) throws Exception {
+    // Triggered via REST endpoint 
+    public void receiveTransaction(String transactionQueueName, String batchId) throws Exception {
         try {
-            String text = message.getText();
-            logger.info("Received transactional message: {}", text);
+            txJmsTemplate.execute(session -> {
+                Queue queue = session.createQueue(transactionQueueName);
+                MessageConsumer consumer = session.createConsumer(queue);
+
+                List<TextMessage> batch = new ArrayList<>();
+                Message msg;
+                while ((msg = consumer.receive(receiveTimeout)) != null) {
+                    if (batchId.equals(msg.getStringProperty("batchId"))) {
+                        batch.add((TextMessage) msg);
+                    }
+                }
+
+                if (!batch.isEmpty()) {
+                    logger.info("Processing batchId={} with {} messages", batchId, batch.size());
+                    for (TextMessage m : batch) {
+                        logger.info("Message: {}", m.getText());
+                    }
+                } else {
+                    logger.warn("No messages found for batchId={}", batchId);
+                }
+
+                session.commit(); 
+                logger.info("Transaction {} received and committed with {} messages", batchId, batch.size());
+                return null;
+            }, true);
         } catch (Exception e) {
-            logger.error("Transaction rolled back for message: {}", message.getText(), e);
-            throw e; // ensures Spring rolls back the session
+            logger.error("Transaction rolled back", e);
+            throw e; 
         }
     }
 
