@@ -55,7 +55,7 @@ public class ProducerService {
     // blockOnAcknowledge = true
     public void send(String queueName, String message) {
 
-        LocalDateTime now = LocalDateTime.now();
+        // LocalDateTime now = LocalDateTime.now();
         try {
             syncJmsTemplate.convertAndSend(queueName, message);
             logger.info("SYNC message sent: {}", message);
@@ -64,7 +64,7 @@ public class ProducerService {
             throw e;
         }
         LocalDateTime after = LocalDateTime.now();
-        logger.info("Time taken to send SYNC message: {} ms", java.time.Duration.between(now, after).toMillis());
+        // logger.info("Time taken to send SYNC message: {} ms", java.time.Duration.between(now, after).toMillis());
     }
 
     /** Scenario 2: Transactional send */
