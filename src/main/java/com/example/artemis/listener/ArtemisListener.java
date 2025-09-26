@@ -12,7 +12,7 @@ public class ArtemisListener {
     private static final Logger logger = LoggerFactory.getLogger(ArtemisListener.class);
 
     // Asynchronous consumption
-    // Session AUTO_ACKNOWLEDGE must be set in the listener container factory
+    // Session ack mode = AUTO_ACKNOWLEDGE
     @JmsListener(destination = "${app.queue.async}")
     public void receiveAsync(TextMessage message) throws Exception {
         try {

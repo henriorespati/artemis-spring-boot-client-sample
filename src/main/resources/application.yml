@@ -2,28 +2,28 @@ spring:
   artemis:
     user: admin
     password: password
-    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&confirmationWindowSize=1048576&blockOnDurableSend=false&blockOnAcknowledge=false
-    ##useTopologyForLoadBalancing=true
-    ##&reconnectAttempts=5&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000
+    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&reconnectAttempts=1&failoverAttempts=1&callTimeout=10000&blockonAcknowledge=false
+    ##&useTopologyForLoadBalancing=false
+    ##&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000
     ##&consumerWindowSize=-1&producerWindowSize=-1
-    ##&connectionTtl=60000
+    ##&confirmationWindowSize=1048576
     
     pool:
       enabled: true                     # enable JmsPoolConnectionFactory
-      max-connections: 2                # max physical connections
-      max-sessions-per-connection: 20   # max sessions per connection
+      max-connections: 1                # max physical connections
+      max-sessions-per-connection: 500  # max sessions per connection
       idle-timeout: 30000               # ms before idle connections are closed
-      block-if-full: true               # block when max connections reached
-      block-if-full-timeout: 5000       # ms to wait for a connection, -1 = forever
 
   # Listener/template parameters
   jms:
     listener:
-      concurrency: 2                # min concurrent consumers
-      max-concurrency: 10           # max concurrent consumers
+      min-concurrency: 2                # min concurrent consumers
+      max-concurrency: 2                # max concurrent consumers
+      session:
+        acknowledge-mode: auto          # session ack mode
 
     template:
-      receive-timeout: 1000         # timeout for receive() in ms
+      receive-timeout: 1000             # timeout for receive() in ms
 
 app:
   queue:

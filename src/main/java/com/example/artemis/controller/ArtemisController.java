@@ -5,6 +5,7 @@ import com.example.artemis.service.ProducerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,15 +16,20 @@ public class ArtemisController {
     private final ProducerService producerService;
 
     @Value("${app.queue.async}")
-    private String asyncQueue;
+    private String asyncQueueName;
 
     public ArtemisController(ProducerService producerService) {
         this.producerService = producerService;
     }
 
     @PostMapping("/send/async")
-    public String sendAsync(@RequestBody String message) {
-        producerService.sendAsync(asyncQueue, message);
-        return "ASYNC message sent successfully";
+    public ResponseEntity<String> sendAsync(@RequestBody String message) {
+        try {
+            producerService.sendAsync(asyncQueueName, message);
+            return ResponseEntity.ok("ASYNC message sent successfully");
+        } catch (Exception e) {
+            logger.error("Failed to send async message", e);
+            return ResponseEntity.status(500).body("Error sending async message: " + e.getMessage());
+        }
     }
 }

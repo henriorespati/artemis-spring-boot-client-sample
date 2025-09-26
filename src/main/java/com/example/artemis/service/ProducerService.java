@@ -17,7 +17,7 @@ public class ProducerService {
     }
 
     // Asynchronous send 
-    // blockOnAcknowledge=false must be set on the connection factory
+    // blockOnAcknowledge=false 
     @Async
     public void sendAsync(String queueName, String message) {
         try {
