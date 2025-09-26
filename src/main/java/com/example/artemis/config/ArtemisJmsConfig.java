@@ -1,34 +1,47 @@
 package com.example.artemis.config;
 
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.activemq.artemis.jms.client.ActiveMQXAConnectionFactory;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.connection.JmsTransactionManager;
 import org.springframework.jms.core.JmsTemplate;
-
-import jakarta.jms.Session;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class ArtemisJmsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
 
-    @Autowired
-    private JmsTemplate jmsTemplate;
+    @Value("${spring.artemis.user}")
+    private String artemisUser;
+
+    @Value("${spring.artemis.password}")
+    private String artemisPassword;
+
+    @Value("${spring.artemis.broker-url}")
+    private String brokerUrl;
+
+    @Value("${spring.artemis.pool.max-connections}")
+    private int poolMaxConnections;
+
+    @Value("${spring.artemis.pool.max-sessions-per-connection}")
+    private int poolMaxSessionsPerConnection;
 
     @Value("${spring.jms.listener.min-concurrency}")
     private int listenerMinConcurrency;
 
     @Value("${spring.jms.listener.max-concurrency}")
     private int listenerMaxConcurrency;
+
+    @Value("${spring.jms.template.receive-timeout}")
+    private int templateReceiveTimeout;
 
     @Bean
     CommandLineRunner check(
@@ -141,6 +154,20 @@ public class ArtemisJmsConfig {
         };
     }
 
+    // Transactional Pooled ConnectionFactory
+    @Bean
+    public JmsPoolConnectionFactory pooledConnectionFactory() {
+        ActiveMQXAConnectionFactory factory = new ActiveMQXAConnectionFactory(brokerUrl);
+        factory.setUser(artemisUser);
+        factory.setPassword(artemisPassword);
+
+        JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
+        pool.setConnectionFactory(factory);
+        pool.setMaxConnections(poolMaxConnections);
+        pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
+        return pool;
+    }
+
     @Bean
     public JmsTransactionManager jmsTransactionManager(JmsPoolConnectionFactory connectionFactory) {
         return new JmsTransactionManager(connectionFactory);
@@ -149,13 +176,29 @@ public class ArtemisJmsConfig {
     // Transactional listener container factory
     @Bean
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(
-            JmsPoolConnectionFactory connectionFactory, JmsTransactionManager transactionManager) {
+            JmsPoolConnectionFactory connectionFactory, 
+            JmsTransactionManager jmsTransactionManager) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setSessionTransacted(true);
-        factory.setTransactionManager(transactionManager);
+        factory.setTransactionManager(jmsTransactionManager);
         factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
         return factory;
+    }
+
+    // Transactional jms template
+    @Bean
+    public JmsTemplate jmsTemplate(
+            JmsPoolConnectionFactory connectionFactory) {
+        JmsTemplate template = new JmsTemplate(connectionFactory);
+        template.setReceiveTimeout(templateReceiveTimeout);
+        template.setSessionTransacted(true); 
+        return template;
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
 }
