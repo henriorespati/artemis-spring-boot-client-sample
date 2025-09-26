@@ -38,7 +38,6 @@ public class ProducerService {
             jmsTemplate.execute(session -> {
                 var producer = session.createProducer(session.createQueue(queueName));
                 for (String msg : messages) {
-                    producer.send(session.createTextMessage(msg));
                     TextMessage msgText = session.createTextMessage(msg);
                     msgText.setStringProperty("batchId", batchId);
                     msgText.setIntProperty("batchSize", batchSize);
