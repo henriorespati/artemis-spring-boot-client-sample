@@ -33,7 +33,7 @@ public class ArtemisController {
             producerService.sendTransaction(transactionQueueName, messages);
             return ResponseEntity.ok("Transactional send committed");
         } catch (Exception e) {
-            logger.error("Failed to send transactional messages", e);
+            logger.error("Failed to send transactional messages");
             return ResponseEntity.status(500).body("Error sending transactional messages: " + e.getMessage());
         }
     }
@@ -44,7 +44,7 @@ public class ArtemisController {
             artemisListener.receiveTransaction(transactionQueueName, batchId);
             return ResponseEntity.ok("Transactional send committed");
         } catch (Exception e) {
-            logger.error("Failed to send transactional messages", e);
+            logger.error("Failed to receive transactional messages");
             return ResponseEntity.status(500).body("Error sending transactional messages: " + e.getMessage());
         }
     }

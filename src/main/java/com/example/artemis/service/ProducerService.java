@@ -44,17 +44,20 @@ public class ProducerService {
                     producer.send(msgText);
                     logger.info("Transactional message sent: {}", msg);
                 }
+                
                 // Commit the transaction
                 session.commit();
                 logger.info("Transaction {} sent and committed with {} messages", batchId, batchSize);
 
                 // Optional: Trigger the consumer REST API to process the batch immediately after sending
+                // Error sent by the consumer will be caught here and trigger rollback
                 restTemplate.postForObject(consumerCallbackUrl, batchId, String.class);
 
                 return null;
             }, true); 
         } catch (Exception e) {
-            logger.error("Transaction rolled back", e);
+            logger.error("Transaction {} rolled back in Producer", batchId);
+            logger.debug(e.toString());
             throw e;
         }
     }

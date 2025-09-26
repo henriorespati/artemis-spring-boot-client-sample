@@ -7,6 +7,7 @@ import jakarta.jms.TextMessage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +31,15 @@ public class ArtemisListener {
 
     // Transactional consumption 
     // Session transacted = true 
-    // Triggered via REST endpoint 
+    // Triggered via REST endpoint "/artemis/receive/transaction"
     public void receiveTransaction(String transactionQueueName, String batchId) throws Exception {
         try {
+            List<TextMessage> batch = new ArrayList<>();
+
             jmsTemplate.execute(session -> {
                 Queue queue = session.createQueue(transactionQueueName);
                 MessageConsumer consumer = session.createConsumer(queue);
-
-                List<TextMessage> batch = new ArrayList<>();
+                
                 Message msg;
                 while ((msg = consumer.receive(receiveTimeout)) != null) {
                     if (batchId.equals(msg.getStringProperty("batchId"))) {
@@ -54,13 +56,18 @@ public class ArtemisListener {
                     logger.warn("No messages found for batchId={}", batchId);
                 }
 
-                session.commit(); 
+                // if(new Random().nextInt(5) == 0)
+                //     throw new RuntimeException("Simulated failure and rollback");
+
+                session.commit();
                 logger.info("Transaction {} received and committed with {} messages", batchId, batch.size());
+                
                 return null;
-            }, true);
+            }, true); 
         } catch (Exception e) {
-            logger.error("Transaction rolled back", e);
-            throw e; 
+            logger.error("Transaction {} rolled back in Consumer", batchId);
+            logger.debug(e.toString());
+            throw e;
         }
     }
 }

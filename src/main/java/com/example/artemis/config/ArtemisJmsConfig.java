@@ -1,7 +1,6 @@
 package com.example.artemis.config;
 
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-import org.apache.activemq.artemis.jms.client.ActiveMQXAConnectionFactory;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +65,7 @@ public class ArtemisJmsConfig {
             logger.debug("ConnectionFactory type: {}", pool.getClass().getName());
 
             // --- Pooled ConnectionFactory settings ---
-            logger.debug("JmsPoolConnectionFactory settings:");
+            logger.debug("ConnectionFactory settings:");
             logger.debug("  maxConnections={} maxSessionsPerConnection={} blockIfFull={} blockIfFullTimeout(ms)={}",
                     pool.getMaxConnections(),
                     pool.getMaxSessionsPerConnection(),
@@ -157,7 +156,7 @@ public class ArtemisJmsConfig {
     // Transactional Pooled ConnectionFactory
     @Bean
     public JmsPoolConnectionFactory pooledConnectionFactory() {
-        ActiveMQXAConnectionFactory factory = new ActiveMQXAConnectionFactory(brokerUrl);
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
         factory.setUser(artemisUser);
         factory.setPassword(artemisPassword);
 
