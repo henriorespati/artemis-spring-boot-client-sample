@@ -1,10 +1,10 @@
 package com.example.artemis.service;
 
+import jakarta.jms.JMSException;
 import jakarta.jms.Message;
-import jakarta.jms.MessageConsumer;
-import jakarta.jms.MessageProducer;
-import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
+
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,25 +27,37 @@ public class ProducerService {
     }
 
     // Send Request and wait for Reply  
-    public String sendRequest(String requestQueueName, String message) {
-        return jmsTemplate.execute(session -> {
-            MessageProducer producer = session.createProducer(session.createQueue(requestQueueName));
-            Queue replyQueue = session.createTemporaryQueue();
-            TextMessage msg = session.createTextMessage(message);
-            msg.setJMSReplyTo(replyQueue);
-            producer.send(msg);
+    // Use durable queue for reply
+    public String sendRequest(String requestQueueName, String replyQueueName, String message) {
+        // Generate a unique correlation ID for this request
+        String correlationId = UUID.randomUUID().toString();
 
-            MessageConsumer consumer = session.createConsumer(replyQueue);
-            Message reply = consumer.receive(receiveTimeout);
+        // Set a custom reply selector so we only receive our message
+        String selector = "JMSCorrelationID = '" + correlationId + "'";
+
+        try {
+            // Send the request message with the correlation ID and reply queue
+            jmsTemplate.send(requestQueueName, session -> {
+                TextMessage msg = session.createTextMessage(message);
+                msg.setJMSReplyTo(session.createQueue(replyQueueName));
+                msg.setJMSCorrelationID(correlationId);
+                return msg;
+            });
+
+            Message reply = jmsTemplate.receiveSelected(replyQueueName, selector);
 
             if (reply != null) {
                 String replyText = ((TextMessage) reply).getText();
-                logger.info("Request message sent: '{}', received message: '{}'", message, replyText);
+                logger.info("Request message sent: '{}', received message: '{}', correlationId: {}", 
+                    message, replyText, correlationId);
                 return replyText;
             } else {
-                logger.warn("Request message sent: '{}', but no reply received after timeout", message);
+                logger.warn("Request message sent: '{}', but no reply received", message);
                 return null;
             }
-        }, true); 
+        } catch (JMSException e) {
+            logger.error("Failed to send or receive JMS message", e);
+            return null;
+        }
     }
 }

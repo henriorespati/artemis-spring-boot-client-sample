@@ -19,7 +19,7 @@ public class ArtemisListener {
     }
 
     // Receive Request and send Reply 
-    @JmsListener(destination = "${app.queue.request}", containerFactory = "jmsListenerContainerFactory")
+    @JmsListener(destination = "${app.queue.request}")
     public void receiveAndReply(TextMessage message) throws Exception {
         try {
             String text = message.getText();
@@ -28,7 +28,11 @@ public class ArtemisListener {
             Destination replyDest = message.getJMSReplyTo();
             if (replyDest != null) {
                 String replyText = "Reply to: " + text;
-                jmsTemplate.send(replyDest, session -> session.createTextMessage(replyText));
+                jmsTemplate.send(replyDest, session -> {
+                    TextMessage replyMessage = session.createTextMessage(replyText);
+                    replyMessage.setJMSCorrelationID(message.getJMSCorrelationID());
+                    return replyMessage;
+                });
                 logger.info("Sent reply: {} to queue {}", replyText, replyDest);
             } else {
                 logger.warn("No JMSReplyTo set, cannot send reply for message: {}", text);
