@@ -273,7 +273,7 @@ public class ArtemisJmsConfig {
     // Transactional jms template using CachingConnectionFactory
     @Bean
     public JmsTemplate txJmsTemplate(
-            @Qualifier("defaultCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+            @Qualifier("txCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
         template.setReceiveTimeout(templateReceiveTimeout);
         template.setSessionTransacted(true); // for transactional send
