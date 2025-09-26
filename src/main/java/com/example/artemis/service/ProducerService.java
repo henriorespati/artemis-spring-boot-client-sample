@@ -63,7 +63,7 @@ public class ProducerService {
             logger.error("Failed to send sync message", e);
             throw e;
         }
-        LocalDateTime after = LocalDateTime.now();
+        // LocalDateTime after = LocalDateTime.now();
         // logger.info("Time taken to send SYNC message: {} ms", java.time.Duration.between(now, after).toMillis());
     }
 
