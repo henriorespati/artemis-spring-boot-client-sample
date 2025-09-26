@@ -16,20 +16,21 @@ public class ArtemisController {
     private final ProducerService producerService;
 
     @Value("${app.queue.test}")
-    private String testQueue;
+    private String testQueueName;
 
     public ArtemisController(ProducerService producerService) {
         this.producerService = producerService;
     }
 
-    @PostMapping("/send/sync-send-async-receive")
+    @PostMapping("/send/sync")
     public ResponseEntity<String> sendSync(@RequestBody String message) {
         try {
-            producerService.send(testQueue, message);
+            producerService.send(testQueueName, message);
             return ResponseEntity.ok("SYNC message sent");
         } catch (Exception e) {
             logger.error("Failed to send sync message", e);
             return ResponseEntity.status(500).body("Error sending sync message");
         }
     }
+
 }
