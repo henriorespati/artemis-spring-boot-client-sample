@@ -42,10 +42,10 @@ public class ArtemisController {
     public ResponseEntity<String> receiveTransaction(@RequestBody String batchId) {
         try {
             artemisListener.receiveTransaction(transactionQueueName, batchId);
-            return ResponseEntity.ok("Transactional send committed");
+            return ResponseEntity.ok("Transactional receive committed");
         } catch (Exception e) {
             logger.error("Failed to receive transactional messages");
-            return ResponseEntity.status(500).body("Error sending transactional messages: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error receiving transactional messages: " + e.getMessage());
         }
     }
 }
