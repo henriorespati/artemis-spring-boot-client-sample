@@ -57,20 +57,20 @@ public class ProducerService {
     /** Scenario 1: Synchronous send */
     // blockOnAcknowledge = true
     public void send(String queueName, String message) {
-
         LocalDateTime now = LocalDateTime.now();
         try {
             syncJmsTemplate.convertAndSend(queueName, message);
             logger.info("SYNC message sent: {}", message);
+
+            // Optional: Trigger the consumer REST API to process the batch immediately after sending
+            // Only do this when using JmsTemplate receive() NOT JmsListener
+            // restTemplate.postForObject(syncConsumerCallbackUrl, null, String.class);
         } catch (JmsException e) {
             logger.error("Failed to send sync message", e);
             throw e;
         }
         LocalDateTime after = LocalDateTime.now();
         logger.info("Time taken to send SYNC message: {} ms", java.time.Duration.between(now, after).toMillis());
-
-        // Optional: Trigger the consumer REST API to process the batch immediately after sending
-        // restTemplate.postForObject(syncConsumerCallbackUrl, null, String.class);
     }
 
     /** Scenario 2: Transactional send */
