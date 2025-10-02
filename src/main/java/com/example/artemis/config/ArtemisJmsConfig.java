@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.apache.activemq.artemis.jms.client.ActiveMQXAConnectionFactory;
-// import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,133 +50,122 @@ public class ArtemisJmsConfig {
     private int templateReceiveTimeout;
 
     // Default Pooled ConnectionFactory
-    // @Bean
-    // public JmsPoolConnectionFactory defaultPooledConnectionFactory() {
-    //     ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
-    //     factory.setUser(artemisUser);
-    //     factory.setPassword(artemisPassword);
-
-    //     JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
-    //     pool.setConnectionFactory(factory);
-    //     pool.setMaxConnections(poolMaxConnections);
-    //     pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
-    //     return pool;
-    // }
-
-    // Default Caching ConnectionFactory
     @Bean
-    public CachingConnectionFactory defaultCachingConnectionFactory() {
+    public JmsPoolConnectionFactory defaultPooledConnectionFactory() {
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
         factory.setUser(artemisUser);
         factory.setPassword(artemisPassword);
 
-        CachingConnectionFactory pool = new CachingConnectionFactory();
-        pool.setTargetConnectionFactory(factory);
-        pool.setCacheProducers(true);
-        pool.setCacheConsumers(true);
-        pool.setSessionCacheSize(poolMaxSessionsPerConnection);
+        JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
+        pool.setConnectionFactory(factory);
+        pool.setMaxConnections(poolMaxConnections);
+        pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
         return pool;
     }
 
-    // Sync Pooled ConnectionFactory
+    // Default Caching ConnectionFactory
     // @Bean
-    // public JmsPoolConnectionFactory syncPooledConnectionFactory() {
+    // public CachingConnectionFactory defaultCachingConnectionFactory() {
     //     ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
     //     factory.setUser(artemisUser);
     //     factory.setPassword(artemisPassword);
-    //     factory.setBlockOnAcknowledge(true); // for SYNC send/receive
-    //     // factory.setReconnectAttempts(0);
-    //     // factory.setConnectionTTL(60000);
 
-    //     JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
-    //     pool.setConnectionFactory(factory);
-    //     pool.setMaxConnections(poolMaxConnections);
-    //     pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
-    //     pool.setConnectionIdleTimeout(10000);
-        
+    //     CachingConnectionFactory pool = new CachingConnectionFactory();
+    //     pool.setTargetConnectionFactory(factory);
+    //     pool.setCacheProducers(true);
+    //     pool.setCacheConsumers(true);
+    //     pool.setSessionCacheSize(poolMaxSessionsPerConnection);
     //     return pool;
     // }
 
-    // Sync Pooled ConnectionFactory using CachingConnectionFactory
+    // Sync Pooled ConnectionFactory
     @Bean
-    public CachingConnectionFactory syncCachingConnectionFactory() {
+    public JmsPoolConnectionFactory syncPooledConnectionFactory() {
         ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
         factory.setUser(artemisUser);
         factory.setPassword(artemisPassword);
         factory.setBlockOnAcknowledge(true); // for SYNC send/receive
+        // factory.setReconnectAttempts(0);
+        // factory.setConnectionTTL(60000);
 
-        CachingConnectionFactory pool = new CachingConnectionFactory();
-        pool.setTargetConnectionFactory(factory);
-        pool.setCacheProducers(true);
-        pool.setCacheConsumers(true);
-        pool.setSessionCacheSize(poolMaxSessionsPerConnection);
+        JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
+        pool.setConnectionFactory(factory);
+        pool.setMaxConnections(poolMaxConnections);
+        pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
+        pool.setConnectionIdleTimeout(10000);
+        
         return pool;
     }
 
-    // Transactional Pooled ConnectionFactory
+    // Sync Pooled ConnectionFactory using CachingConnectionFactory
     // @Bean
-    // public JmsPoolConnectionFactory txPooledConnectionFactory() {
-    //     ActiveMQXAConnectionFactory factory = new ActiveMQXAConnectionFactory(brokerUrl);
+    // public CachingConnectionFactory syncCachingConnectionFactory() {
+    //     ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
     //     factory.setUser(artemisUser);
     //     factory.setPassword(artemisPassword);
+    //     factory.setBlockOnAcknowledge(true); // for SYNC send/receive
 
-    //     JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
-    //     pool.setConnectionFactory(factory);
-    //     pool.setMaxConnections(poolMaxConnections);
-    //     pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
+    //     CachingConnectionFactory pool = new CachingConnectionFactory();
+    //     pool.setTargetConnectionFactory(factory);
+    //     pool.setCacheProducers(true);
+    //     pool.setCacheConsumers(true);
+    //     pool.setSessionCacheSize(poolMaxSessionsPerConnection);
     //     return pool;
     // }
 
-    // Transactional Caching ConnectionFactory
+    // Transactional Pooled ConnectionFactory
     @Bean
-    public CachingConnectionFactory txCachingConnectionFactory() {
+    public JmsPoolConnectionFactory txPooledConnectionFactory() {
         ActiveMQXAConnectionFactory factory = new ActiveMQXAConnectionFactory(brokerUrl);
         factory.setUser(artemisUser);
         factory.setPassword(artemisPassword);
 
-        CachingConnectionFactory pool = new CachingConnectionFactory();
-        pool.setTargetConnectionFactory(factory);
-        pool.setCacheProducers(true);
-        pool.setCacheConsumers(true);
-        pool.setSessionCacheSize(poolMaxSessionsPerConnection);
+        JmsPoolConnectionFactory pool = new JmsPoolConnectionFactory();
+        pool.setConnectionFactory(factory);
+        pool.setMaxConnections(poolMaxConnections);
+        pool.setMaxSessionsPerConnection(poolMaxSessionsPerConnection);
         return pool;
     }
 
-    // Default listener container factory
+    // Transactional Caching ConnectionFactory
     // @Bean
-    // public DefaultJmsListenerContainerFactory defaultJmsListenerContainerFactory(
-    //         @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
-    //     DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-    //     factory.setConnectionFactory(connectionFactory);
-    //     factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
-    //     return factory;
+    // public CachingConnectionFactory txCachingConnectionFactory() {
+    //     ActiveMQXAConnectionFactory factory = new ActiveMQXAConnectionFactory(brokerUrl);
+    //     factory.setUser(artemisUser);
+    //     factory.setPassword(artemisPassword);
+
+    //     CachingConnectionFactory pool = new CachingConnectionFactory();
+    //     pool.setTargetConnectionFactory(factory);
+    //     pool.setCacheProducers(true);
+    //     pool.setCacheConsumers(true);
+    //     pool.setSessionCacheSize(poolMaxSessionsPerConnection);
+    //     return pool;
     // }
 
-    // Default listener container factory using CachingConnectionFactory
+    // Default listener container factory
     @Bean
     public DefaultJmsListenerContainerFactory defaultJmsListenerContainerFactory(
-            @Qualifier("defaultCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+            @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
         return factory;
     }
 
-    // Sync listener container factory
+    // Default listener container factory using CachingConnectionFactory
     // @Bean
-    // public DefaultJmsListenerContainerFactory syncJmsListenerContainerFactory(
-    //         @Qualifier("syncPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
+    // public DefaultJmsListenerContainerFactory defaultJmsListenerContainerFactory(
+    //         @Qualifier("defaultCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
     //     DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
     //     factory.setConnectionFactory(connectionFactory);
-    //     factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // for SYNC listener
     //     factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
     //     return factory;
     // }
 
-    // Sync listener container factory using CachingConnectionFactory
+    // Sync listener container factory
     @Bean
     public DefaultJmsListenerContainerFactory syncJmsListenerContainerFactory(
-            @Qualifier("syncCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+            @Qualifier("syncPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // for SYNC listener
@@ -184,10 +173,40 @@ public class ArtemisJmsConfig {
         return factory;
     }
 
+    // Sync listener container factory using CachingConnectionFactory
+    // @Bean
+    // public DefaultJmsListenerContainerFactory syncJmsListenerContainerFactory(
+    //         @Qualifier("syncCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+    //     DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+    //     factory.setConnectionFactory(connectionFactory);
+    //     factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // for SYNC listener
+    //     factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
+    //     return factory;
+    // }
+
     // Transactional listener container factory
+    @Bean
+    public DefaultJmsListenerContainerFactory txJmsListenerContainerFactory(
+            @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory,
+            JmsTransactionManager jmsTransactionManager) {
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setConcurrency("1-1"); 
+        factory.setSessionTransacted(true);
+        factory.setTransactionManager(jmsTransactionManager);
+        return factory;
+    }
+
+    @Bean
+    public JmsTransactionManager jmsTransactionManager(
+            @Qualifier("txPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
+        return new JmsTransactionManager(connectionFactory);
+    }
+
+    // Transactional listener container factory using CachingConnectionFactory
     // @Bean
     // public DefaultJmsListenerContainerFactory txJmsListenerContainerFactory(
-    //         @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory,
+    //         @Qualifier("defaultCachingConnectionFactory") CachingConnectionFactory connectionFactory,
     //         JmsTransactionManager jmsTransactionManager) {
     //     DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
     //     factory.setConnectionFactory(connectionFactory);
@@ -199,86 +218,67 @@ public class ArtemisJmsConfig {
 
     // @Bean
     // public JmsTransactionManager jmsTransactionManager(
-    //         @Qualifier("txPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
+    //         @Qualifier("txCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
     //     return new JmsTransactionManager(connectionFactory);
     // }
 
-    // Transactional listener container factory using CachingConnectionFactory
-    @Bean
-    public DefaultJmsListenerContainerFactory txJmsListenerContainerFactory(
-            @Qualifier("defaultCachingConnectionFactory") CachingConnectionFactory connectionFactory,
-            JmsTransactionManager jmsTransactionManager) {
-        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setConcurrency("1-1"); // for TX listener, use single consumer
-        factory.setSessionTransacted(true);
-        factory.setTransactionManager(jmsTransactionManager);
-        return factory;
-    }
-
-    @Bean
-    public JmsTransactionManager jmsTransactionManager(
-            @Qualifier("txCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
-        return new JmsTransactionManager(connectionFactory);
-    }
-
     // Default jms template
-    // @Bean
-    // public JmsTemplate defaultJmsTemplate(
-    //         @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
-    //     JmsTemplate template = new JmsTemplate(connectionFactory);
-    //     template.setReceiveTimeout(templateReceiveTimeout);
-    //     return template;
-    // }
-
-    // Default jms template using CachingConnectionFactory
     @Bean
     public JmsTemplate defaultJmsTemplate(
-            @Qualifier("defaultCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+            @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
         template.setReceiveTimeout(templateReceiveTimeout);
         return template;
     }
 
-    // Sync jms template
+    // Default jms template using CachingConnectionFactory
     // @Bean
-    // public JmsTemplate syncJmsTemplate(
-    //         @Qualifier("syncPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
+    // public JmsTemplate defaultJmsTemplate(
+    //         @Qualifier("defaultCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
     //     JmsTemplate template = new JmsTemplate(connectionFactory);
     //     template.setReceiveTimeout(templateReceiveTimeout);
-    //     template.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // for SYNC send
     //     return template;
     // }
 
-    // Sync jms template using CachingConnectionFactory
+    // Sync jms template
     @Bean
     public JmsTemplate syncJmsTemplate(
-            @Qualifier("syncCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+            @Qualifier("syncPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
         template.setReceiveTimeout(templateReceiveTimeout);
         template.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // for SYNC send
         return template;
     }
 
-    // Transactional jms template
+    // Sync jms template using CachingConnectionFactory
     // @Bean
-    // public JmsTemplate txJmsTemplate(
-    //         @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
+    // public JmsTemplate syncJmsTemplate(
+    //         @Qualifier("syncCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
     //     JmsTemplate template = new JmsTemplate(connectionFactory);
     //     template.setReceiveTimeout(templateReceiveTimeout);
-    //     template.setSessionTransacted(true); // for transactional send
+    //     template.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE); // for SYNC send
     //     return template;
     // }
 
-    // Transactional jms template using CachingConnectionFactory
+    // Transactional jms template
     @Bean
     public JmsTemplate txJmsTemplate(
-            @Qualifier("txCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+            @Qualifier("defaultPooledConnectionFactory") JmsPoolConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
         template.setReceiveTimeout(templateReceiveTimeout);
         template.setSessionTransacted(true); // for transactional send
         return template;
     }
+
+    // Transactional jms template using CachingConnectionFactory
+    // @Bean
+    // public JmsTemplate txJmsTemplate(
+    //         @Qualifier("txCachingConnectionFactory") CachingConnectionFactory connectionFactory) {
+    //     JmsTemplate template = new JmsTemplate(connectionFactory);
+    //     template.setReceiveTimeout(templateReceiveTimeout);
+    //     template.setSessionTransacted(true); // for transactional send
+    //     return template;
+    // }
 
     @Bean
     public RestTemplate restTemplate() {
