@@ -12,6 +12,7 @@ import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerEndpointRegistry;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class ArtemisJmsConfig {
@@ -23,6 +24,11 @@ public class ArtemisJmsConfig {
 
     @Autowired
     private JmsTemplate jmsTemplate;
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    } 
 
     // Log JMS configuration on startup
     @Bean

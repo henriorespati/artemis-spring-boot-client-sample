@@ -1,5 +1,6 @@
 package com.example.artemis.controller;
 
+import com.example.artemis.listener.ArtemisListener;
 import com.example.artemis.service.ProducerService;
 
 import org.slf4j.Logger;
@@ -14,12 +15,14 @@ public class ArtemisController {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisController.class);
     private final ProducerService producerService;
+    private final ArtemisListener artemisListener;
 
     @Value("${app.queue.sync}")
     private String syncQueueName;
 
-    public ArtemisController(ProducerService producerService) {
+    public ArtemisController(ProducerService producerService, ArtemisListener artemisListener) {
         this.producerService = producerService;
+        this.artemisListener = artemisListener;
     }
 
     @PostMapping("/send/sync")
@@ -30,6 +33,18 @@ public class ArtemisController {
         } catch (Exception e) {
             logger.error("Failed to send sync message", e);
             return ResponseEntity.status(500).body("Error sending sync message");
+        }
+    }
+
+    // Endpoint for sync consumption when using JMS template receive()
+    @PostMapping("/receive/sync")
+    public ResponseEntity<String> receiveSync() {
+        try {
+            artemisListener.receiveSync(syncQueueName);
+            return ResponseEntity.ok("Sync receive successful");
+        } catch (Exception e) {
+            logger.error("Failed to receive sync message", e);
+            return ResponseEntity.status(500).body("Error receiving sync message: " + e.getMessage());
         }
     }
 }

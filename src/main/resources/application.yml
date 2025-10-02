@@ -19,17 +19,19 @@ spring:
     listener:
       min-concurrency: 2                # min concurrent consumers
       max-concurrency: 2                # max concurrent consumers
-      session:
-        acknowledge-mode: client        # session acknowledge mode
+    #   session:
+    #     acknowledge-mode: client        # session acknowledge mode
 
     template:
       receive-timeout: 1000             # timeout for receive() in ms
-      session:
-        acknowledge-mode: client        # session acknowledge mode
+    #   session:
+    #     acknowledge-mode: client        # session acknowledge mode
 
 app:
   queue:
     sync: syncQueue
+  consumer:
+    sync-callback-url: http://localhost:8080/artemis/receive/sync
 
 logging:
   level:
