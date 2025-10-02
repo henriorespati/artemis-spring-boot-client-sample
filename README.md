@@ -2,6 +2,7 @@
 
 This project demonstrates a Spring Boot client for **Apache ActiveMQ Artemis** using JMS, including synchronous, request/reply, and transactional message patterns.
 
+Transactional message sending/receiving: Client sends multiple messages and then call the commit() method, marking the entire batch of messages as delivered. When receiving messages, the client processed all messages within the transaction and then call the commit() method to mark all the messages as consumed and complete the transaction. When there is an exception, the transaction will be rolled back, to ensure atomicity.
 ---
 
 ## Features
