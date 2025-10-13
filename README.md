@@ -123,3 +123,7 @@ curl -X POST -H "Content-Type: application/json" \
 ```
 
 ---
+
+## Note
+
+The main branch contains the combined project for all messaging patterns. Checkout the other branches to get each messaging pattern in their own respective project.
