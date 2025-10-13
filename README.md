@@ -88,6 +88,7 @@ java -jar target/artemis-spring-boot-client-sample-1.0.0.jar
 | Method | URL                         | Description                                | Body                   |
 | ------ | --------------------------- | ------------------------------------------ | ---------------------- |
 | POST   | `/artemis/send/sync`        | Send a synchronous message                 | Raw text message       |
+| POST   | `/artemis/send/async`       | Send an asynchronous message               | Raw text message       |
 | POST   | `/artemis/send/request`     | Send a request message and receive a reply | Raw text message       |
 | POST   | `/artemis/send/transaction` | Send multiple messages in a transaction    | JSON array of messages |
 
@@ -98,6 +99,13 @@ java -jar target/artemis-spring-boot-client-sample-1.0.0.jar
 ```bash
 curl -X POST -H "Content-Type: text/plain" \
     -d "Hello Sync" http://localhost:8080/artemis/send/sync
+```
+
+**Send asynchronous message:**
+
+```bash
+curl -X POST -H "Content-Type: text/plain" \
+    -d "Hello Async" http://localhost:8080/artemis/send/async
 ```
 
 **Send request/reply message:**
