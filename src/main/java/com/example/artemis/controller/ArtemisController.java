@@ -28,7 +28,7 @@ public class ArtemisController {
     @PostMapping("/send/sync")
     public ResponseEntity<String> sendSync(@RequestBody String message) {
         try {
-            producerService.send(syncQueueName, message);
+            producerService.send(syncQueueName, message);            
             return ResponseEntity.ok("SYNC message sent");
         } catch (Exception e) {
             logger.error("Failed to send sync message", e);
@@ -37,14 +37,14 @@ public class ArtemisController {
     }
 
     // Endpoint for sync consumption when using JMS template receive()
-    @PostMapping("/receive/sync")
-    public ResponseEntity<String> receiveSync() {
-        try {
-            artemisListener.receiveSync(syncQueueName);
-            return ResponseEntity.ok("Sync receive successful");
-        } catch (Exception e) {
-            logger.error("Failed to receive sync message", e);
-            return ResponseEntity.status(500).body("Error receiving sync message: " + e.getMessage());
-        }
-    }
+    // @PostMapping("/receive/sync")
+    // public ResponseEntity<String> receiveSync() {
+    //     try {
+    //         artemisListener.receiveSync(syncQueueName);
+    //         return ResponseEntity.ok("Sync receive successful");
+    //     } catch (Exception e) {
+    //         logger.error("Failed to receive sync message", e);
+    //         return ResponseEntity.status(500).body("Error receiving sync message: " + e.getMessage());
+    //     }
+    // }
 }

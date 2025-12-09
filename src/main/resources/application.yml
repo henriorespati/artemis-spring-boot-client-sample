@@ -2,9 +2,13 @@ spring:
   artemis:
     user: admin
     password: password
-    broker-url: (tcp://localhost:61617,tcp://localhost:61717)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&reconnectAttempts=1&failoverAttempts=1&callTimeout=10000&blockOnAcknowledge=true
-    ##&useTopologyForLoadBalancing=false
-    ##&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=5000
+    broker-url: (tcp://localhost:61817,tcp://localhost:61717,tcp://localhost:61617)?sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false&useTopologyForLoadBalancing=true&reconnectAttempts=1&failoverAttempts=1&retryInterval=1000
+    #&connectionLoadBalancingPolicyClassName=org.apache.activemq.artemis.api.core.client.loadbalance.RandomConnectionLoadBalancingPolicy
+    #&clientFailureCheckPeriod=10000
+    #&retryInterval=1000&callTimeout=1000&blockOnAcknowledge=true
+    #&connectionTTL=500
+    ##
+    ##&retryIntervalMultiplier=1.0&maxRetryInterval=5000
     ##&consumerWindowSize=-1&producerWindowSize=-1
     ##&confirmationWindowSize=1048576
     
@@ -16,16 +20,19 @@ spring:
 
   # Listener/template parameters
   jms:
-    listener:
-      min-concurrency: 2                # min concurrent consumers
-      max-concurrency: 2                # max concurrent consumers
-    #   session:
-    #     acknowledge-mode: client        # session acknowledge mode
+    cache:
+      session-cache-size: 10          # number of cached sessions
+      consumers: true
+      producers: true
 
-    template:
-      receive-timeout: 1000             # timeout for receive() in ms
+    listener:
+      min-concurrency: 10                # min concurrent consumers
+      max-concurrency: 10                # max concurrent consumers
+
+    # template:
+    #   receive-timeout: 1000             # timeout for receive() in ms
     #   session:
-    #     acknowledge-mode: client        # session acknowledge mode
+    #     acknowledge-mode: auto        # session acknowledge mode
 
 app:
   queue:
@@ -34,13 +41,15 @@ app:
     sync-callback-url: http://localhost:8080/artemis/receive/sync
 
 logging:
+  file:
+    path: logs
   level:
     root: info
     com.example.artemis: debug
     # org.apache.activemq.artemis: debug
-    # org.apache.activemq.artemis.core.client: debug
+    org.apache.activemq.artemis.core.client: debug
     # org.apache.activemq.artemis.api.core.client: debug
     # org.apache.activemq.artemis.jms.client: debug
     # org.springframework.jms.connection: debug
     # org.springframework.jms.listener: debug    
-    # org.messaginghub.pooled.jms: debug
+    org.messaginghub.pooled.jms: debug

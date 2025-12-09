@@ -13,8 +13,8 @@
 
     <properties>
         <java.version>17</java.version>
-        <spring.boot.version>3.5.5</spring.boot.version>
-        <artemis.version>2.33.0.redhat-00016</artemis.version>
+        <spring.boot.version>3.3.13</spring.boot.version>
+        <artemis.version>2.33.0.redhat-00013</artemis.version>
         <pooled-jms.version>3.1.7.redhat-00001</pooled-jms.version>
         <aspectj.version>1.9.24</aspectj.version>
     </properties>
@@ -42,6 +42,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-artemis</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.activemq</groupId>
+                    <artifactId>artemis-jakarta-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Spring Web -->
@@ -53,7 +59,7 @@
         <!-- Artemis JMS Client -->
         <dependency>
             <groupId>org.apache.activemq</groupId>
-            <artifactId>artemis-jms-client</artifactId>
+            <artifactId>artemis-jakarta-client</artifactId>
             <version>${artemis.version}</version>
         </dependency>
 

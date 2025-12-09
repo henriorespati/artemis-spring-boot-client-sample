@@ -1,7 +1,7 @@
 package com.example.artemis.service;
 
-// import java.time.Duration;
-// import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,10 +31,10 @@ public class ProducerService {
     // blockOnAcknowledge = true
     public void send(String queueName, String message) {
         try {
-            // LocalDateTime start = LocalDateTime.now();
+            LocalDateTime start = LocalDateTime.now();
             jmsTemplate.convertAndSend(queueName, message);
-            // LocalDateTime end = LocalDateTime.now();
-            // logger.info("Time lapsed: {} ms", Duration.between(start, end).toMillis());
+            LocalDateTime end = LocalDateTime.now();
+            logger.info("Time lapsed: {} ms", Duration.between(start, end).toMillis());
             logger.info("SYNC message sent: {}", message);
 
             // Optional: Trigger the consumer REST API to process the batch immediately after sending
