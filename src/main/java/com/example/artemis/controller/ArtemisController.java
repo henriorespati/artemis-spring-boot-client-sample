@@ -27,10 +27,21 @@ public class ArtemisController {
         this.artemisListener = artemisListener;
     }
 
-    @PostMapping("/send/transaction")
-    public ResponseEntity<String> sendTransaction(@RequestBody List<String> messages) {
+    @PostMapping("/send/transaction/spring")
+    public ResponseEntity<String> sendSpringTransaction(@RequestBody List<String> messages) {
         try {
-            producerService.sendTransaction(transactionQueueName, messages);
+            producerService.sendSpringTransaction(transactionQueueName, messages);
+            return ResponseEntity.ok("Transactional send committed");
+        } catch (Exception e) {
+            logger.error("Failed to send transactional messages");
+            return ResponseEntity.status(500).body("Error sending transactional messages: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/send/transaction/core")
+    public ResponseEntity<String> sendCoreTransaction(@RequestBody List<String> messages) {
+        try {
+            producerService.sendCoreTransaction(transactionQueueName, messages);
             return ResponseEntity.ok("Transactional send committed");
         } catch (Exception e) {
             logger.error("Failed to send transactional messages");

@@ -167,6 +167,7 @@ public class ArtemisJmsConfig {
         return pool;
     }
 
+    // JMS Transaction Manager for Spring JMS Transactions
     @Bean
     public JmsTransactionManager jmsTransactionManager(JmsPoolConnectionFactory connectionFactory) {
         return new JmsTransactionManager(connectionFactory);
@@ -175,11 +176,15 @@ public class ArtemisJmsConfig {
     // Transactional listener container factory
     @Bean
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(
-            JmsPoolConnectionFactory connectionFactory, 
-            JmsTransactionManager jmsTransactionManager) {
+            JmsPoolConnectionFactory connectionFactory
+            ,JmsTransactionManager jmsTransactionManager) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setSessionTransacted(true);
+
+        // Set session transacted to true for Core JMS transactions
+        // factory.setSessionTransacted(true);
+
+        // Set the transaction manager for Spring JMS transactions
         factory.setTransactionManager(jmsTransactionManager);
         factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
         return factory;
@@ -191,7 +196,9 @@ public class ArtemisJmsConfig {
             JmsPoolConnectionFactory connectionFactory) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
         template.setReceiveTimeout(templateReceiveTimeout);
-        template.setSessionTransacted(true); 
+
+        // Set session transacted to true for Core JMS transactions
+        // template.setSessionTransacted(true);
         return template;
     }
 

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import jakarta.jms.TextMessage;
@@ -28,9 +29,9 @@ public class ProducerService {
         this.restTemplate = restTemplate;
     }
 
-    // Transactional send 
+    // Core JMS Transactional send 
     // Session transacted = true
-    public void sendTransaction(String queueName, List<String> messages) {
+    public void sendCoreTransaction(String queueName, List<String> messages) {
         String batchId = UUID.randomUUID().toString();
         int batchSize = messages.size();
 
@@ -54,7 +55,8 @@ public class ProducerService {
                 restTemplate.postForObject(consumerCallbackUrl, batchId, String.class);
 
                 return null;
-            }, true); 
+            }, true);
+
         } catch (Exception e) {
             logger.error("Transaction {} rolled back in Producer", batchId);
             logger.debug(e.toString());
@@ -62,4 +64,32 @@ public class ProducerService {
         }
     }
 
+    // Spring JMS Transactional send 
+    // Session transacted = false
+    @Transactional
+    public void sendSpringTransaction(String queueName, List<String> messages) {
+        String batchId = UUID.randomUUID().toString();
+        int batchSize = messages.size();
+
+        try {
+            for (int i = 0; i < batchSize; i++) {
+                int seq = batchSize-i-2;
+
+                String msg = messages.get(i);
+                jmsTemplate.convertAndSend(queueName, msg, m -> {
+                    m.setStringProperty("JMSXGroupID", batchId);
+                    m.setIntProperty("JMSXGroupSeq", seq);
+                    return m;
+                });
+                logger.info("Transactional message sent: {}", msg);
+            }
+
+            logger.info("Transaction {} sent and committed with {} messages", batchId, batchSize);
+
+        } catch (Exception e) {
+            logger.error("Transaction {} rolled back in Producer", batchId);
+            logger.debug(e.toString());
+            throw e;
+        }
+    }
 }
