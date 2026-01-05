@@ -40,8 +40,7 @@ public class ProducerService {
                 var producer = session.createProducer(session.createQueue(queueName));
                 for (String msg : messages) {
                     TextMessage msgText = session.createTextMessage(msg);
-                    msgText.setStringProperty("batchId", batchId);
-                    msgText.setIntProperty("batchSize", batchSize);
+                    msgText.setStringProperty("JMSXGroupID", batchId);
                     producer.send(msgText);
                     logger.info("Transactional message sent: {}", msg);
                 }

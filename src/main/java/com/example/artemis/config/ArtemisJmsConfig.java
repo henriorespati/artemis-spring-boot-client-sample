@@ -181,9 +181,6 @@ public class ArtemisJmsConfig {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
 
-        // Set session transacted to true for Core JMS transactions
-        // factory.setSessionTransacted(true);
-
         // Set the transaction manager for Spring JMS transactions
         factory.setTransactionManager(jmsTransactionManager);
         factory.setConcurrency(listenerMinConcurrency + "-" + listenerMaxConcurrency);
@@ -198,7 +195,7 @@ public class ArtemisJmsConfig {
         template.setReceiveTimeout(templateReceiveTimeout);
 
         // Set session transacted to true for Core JMS transactions
-        // template.setSessionTransacted(true);
+        template.setSessionTransacted(true);
         return template;
     }
 

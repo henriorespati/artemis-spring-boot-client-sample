@@ -50,12 +50,10 @@ public class ArtemisListener {
                 
                 Message msg;
                 while ((msg = consumer.receive(receiveTimeout)) != null) {
+                    logger.debug("Receiving messages with batchId={}", batchId);
                     if (batchId.equals(msg.getStringProperty("JMSXGroupID"))) {
                         batch.add((TextMessage) msg);
-                    } else {
-                        session.rollback();
-                        break;
-                    }
+                    } 
                 }
 
                 if (!batch.isEmpty()) {

@@ -22,6 +22,9 @@ public class ArtemisController {
     @Value("${app.queue.transaction}")
     private String transactionQueueName;
 
+    @Value("${app.queue.spring-transaction}")
+    private String springTransactionQueueName;
+
     public ArtemisController(ProducerService producerService, ArtemisListener artemisListener) {
         this.producerService = producerService;
         this.artemisListener = artemisListener;
@@ -30,7 +33,7 @@ public class ArtemisController {
     @PostMapping("/send/transaction/spring")
     public ResponseEntity<String> sendSpringTransaction(@RequestBody List<String> messages) {
         try {
-            producerService.sendSpringTransaction(transactionQueueName, messages);
+            producerService.sendSpringTransaction(springTransactionQueueName, messages);
             return ResponseEntity.ok("Transactional send committed");
         } catch (Exception e) {
             logger.error("Failed to send transactional messages");

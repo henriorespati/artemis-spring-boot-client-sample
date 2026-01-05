@@ -21,8 +21,6 @@ spring:
     listener:
       min-concurrency: 2            # min concurrent consumers
       max-concurrency: 2            # max concurrent consumers
-      session:
-        transacted: true            # use transacted sessions
 
     template:
       receive-timeout: 1000         # timeout for receive() in ms
@@ -32,18 +30,19 @@ spring:
 app:
   queue:
     transaction: transactionQueue
+    spring-transaction: springTransactionQueue
   consumer:
     callback-url: http://localhost:8080/artemis/receive/transaction
 
 logging:
   level:
     root: info
-    com.example.artemis: debug
-    org.apache.activemq.artemis: debug
-    org.apache.activemq.artemis.core.client: debug
-    org.apache.activemq.artemis.api.core.client: debug
-    org.apache.activemq.artemis.jms.client: debug
-    org.springframework.jms.connection: debug
-    org.springframework.jms.core.JmsTemplate: debug
+    com.example.artemis: info
+    org.apache.activemq.artemis: info
+    org.apache.activemq.artemis.core.client: info
+    org.apache.activemq.artemis.api.core.client: info
+    org.apache.activemq.artemis.jms.client: info
+    org.springframework.jms.connection: info
+    org.springframework.jms.core.JmsTemplate: info
     # org.springframework.jms.listener: debug    
     # org.messaginghub.pooled.jms: debug
