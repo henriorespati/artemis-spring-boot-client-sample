@@ -37,14 +37,19 @@ public class ArtemisListener
     public void receiveSync(Message message, Session session) throws Exception {
         try {
             if (message instanceof TextMessage text) {
-                logger.info("Received SYNC: {}", text.getText());
+                logger.info("Received message {} Body: {}", message.getJMSMessageID(), text.getText());
 
                 // Acknowledge the message after processing
                 try {
-                    long start = System.currentTimeMillis();
-                    // while (System.currentTimeMillis() - start < 2000) {}
+                    // Simulate processing time
+                    // long start = System.currentTimeMillis();
+                    // int count = 3;
+                    // while (System.currentTimeMillis() - start < (count * 1000)) {
+                    //     logger.info("Processing message {} in {} seconds... ", message.getJMSMessageID(), count--);
+                    //     Thread.sleep(1000);
+                    // }
                     message.acknowledge();
-                    logger.info("Message acknowledged: {}", text.getText());
+                    logger.info("Message acknowledged {} Body: {}", message.getJMSMessageID(), text.getText());
                 } catch (Exception e) {
                     logger.error("Failed to acknowledge message", e);
                     throw e;

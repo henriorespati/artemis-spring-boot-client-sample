@@ -5,25 +5,63 @@ import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.jms.JmsProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.config.JmsListenerEndpointRegistry;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.listener.DefaultMessageListenerContainer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestTemplate;
+
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.Session;
 
 @Configuration
 public class ArtemisJmsConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtemisJmsConfig.class);
 
-    @Autowired
-    private DefaultJmsListenerContainerFactory jmsListenerContainerFactory;
+    @Value("${spring.jms.listener.concurrency:1}")
+    private int minConcurrency;
+ 
+    @Value("${spring.jms.listener.max-concurrency:10}")
+    private int maxConcurrency;
+
+    @Value("${spring.jms.listener.acknowledge-mode:client}")
+    private String acknowledgeMode;
+
+//     @Autowired
+//     private DefaultJmsListenerContainerFactory jmsListenerContainerFactory;
 
     @Autowired
     private JmsTemplate jmsTemplate;
+
+    // Configure fixed thread pool size equal to maxConcurrency to prevent unbounded thread creation
+    @Bean
+    public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            JmsProperties jmsProperties) {
+
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setSessionAcknowledgeMode(toAcknowledgeMode(acknowledgeMode));
+        factory.setConcurrency(minConcurrency + "-" + maxConcurrency);
+
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(maxConcurrency);
+        executor.setMaxPoolSize(maxConcurrency);
+        executor.setQueueCapacity(0);
+        executor.initialize();
+
+        factory.setTaskExecutor(executor);
+        factory.setErrorHandler(t -> logger.warn("JMS listener error (session will recover)", t));
+
+        return factory;
+    }
 
     @Bean
     public RestTemplate restTemplate() {
@@ -147,4 +185,14 @@ public class ArtemisJmsConfig {
         };
     }
 
+    private static int toAcknowledgeMode(String mode) {
+        return switch (mode.toLowerCase()) {
+            case "auto"     -> Session.AUTO_ACKNOWLEDGE;
+            case "client"   -> Session.CLIENT_ACKNOWLEDGE;
+            case "dups-ok"  -> Session.DUPS_OK_ACKNOWLEDGE;
+            default -> throw new IllegalArgumentException(
+                    "Unknown spring.jms.listener.acknowledge-mode: '" + mode +
+                    "'. Valid values: auto, client, dups-ok");
+        };
+    }
 }
