@@ -11,3 +11,5 @@ logs/
 script/
 
 truststore.*
+*.zip
+*.bak

@@ -2,27 +2,28 @@ spring:
   artemis:
     user: admin
     password: password
-    broker-url: (tcp://localhost:61616,tcp://localhost:61716,tcp://localhost:61816)?ha=true&useTopologyForLoadBalancing=true&reconnectAttempts=2&retryInterval=1000&retryIntervalMultiplier=1.0&failoverAttempts=-1&consumerWindowSize=0&confirmationWindowSize=1048576&clientFailureCheckPeriod=1000&connectionTTL=5000&callTimeout=1000&callFailoverTimeout=5000
-    #sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false
+    broker-url: (tcp://localhost:61616,tcp://localhost:61716,tcp://localhost:61816)?ha=true&useTopologyForLoadBalancing=true&reconnectAttempts=30&retryInterval=1000&retryIntervalMultiplier=1.0&maxRetryInterval=30000&failoverAttempts=-1&consumerWindowSize=0&confirmationWindowSize=1048576&clientFailureCheckPeriod=1000&connectionTTL=5000&callTimeout=1000&callFailoverTimeout=5000
     #&connectionLoadBalancingPolicyClassName=org.apache.activemq.artemis.api.core.client.loadbalance.RandomConnectionLoadBalancingPolicy
+    #sslEnabled=true&trustStoreType=PKCS12&trustStorePath=truststore.p12&trustStorePassword=changeit&verifyHost=false
+    #
     
     pool:
       enabled: true                     # enable JmsPoolConnectionFactory
       max-connections: 1                # max physical connections
-      max-sessions-per-connection: 50   # max sessions per connection
-      idle-timeout: 30000               # ms before idle connections are closed
+      max-sessions-per-connection: 30   # max sessions per connection
+      idle-timeout: 3000                # ms before idle connections are closed
       block-if-full-timeout: 1000       # ms to block when pool is exhausted
 
   # Listener/template parameters
   jms:
-    cache:
-      session-cache-size: 1             # number of cached sessions
-      consumers: true
-      producers: true
+    # cache:
+    #   session-cache-size: 12            # number of cached sessions
+    #   consumers: true
+    #   producers: true
 
     listener:
-      min-concurrency: 1                # min concurrent consumers
-      max-concurrency: 10               # max concurrent consumers
+      min-concurrency: 30               # min concurrent consumers
+      max-concurrency: 30               # max concurrent consumers
       session:
         acknowledge-mode: client        # session acknowledge mode
           
@@ -31,6 +32,13 @@ spring:
       receive-timeout: 1000             # timeout for receive() in ms
       session:
         acknowledge-mode: client        # session acknowledge mode
+
+    rebalance:
+      debounce:
+        node-up-ms: 15000               # wait after node up event before rebalancing
+        node-down-ms: 5000              # wait after node down event before rebalancing
+      stagger-delay-ms: 2000            # delay between stop/start
+      startup-grace-period-ms: 3000     # suppress initial node up events for 30s
 
 app:
   queue:
